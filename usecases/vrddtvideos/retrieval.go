@@ -1,11 +1,11 @@
-package posts
+package vrddtvideos
 
 import (
 	"context"
 	"errors"
 
-	"github.com/spy16/droplets/domain"
-	"github.com/spy16/droplets/pkg/logger"
+	"github.com/johnwyles/vrddt-droplets/domain"
+	"github.com/johnwyles/vrddt-droplets/pkg/logger"
 )
 
 // NewRetriever initializes the retrieval usecase with given store.
@@ -24,12 +24,12 @@ type Retriever struct {
 }
 
 // Get finds a post by its name.
-func (ret *Retriever) Get(ctx context.Context, name string) (*domain.Post, error) {
+func (ret *Retriever) Get(ctx context.Context, name string) (*domain.VrddtVideo, error) {
 	return ret.store.Get(ctx, name)
 }
 
 // Search finds all the posts matching the parameters in the query.
-func (ret *Retriever) Search(ctx context.Context, query Query) ([]domain.Post, error) {
+func (ret *Retriever) Search(ctx context.Context, query Query) ([]domain.VrddtVideo, error) {
 	return nil, errors.New("not implemented")
 }
 

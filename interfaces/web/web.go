@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/gorilla/mux"
-	"github.com/spy16/droplets/pkg/logger"
+	"github.com/johnwyles/vrddt-droplets/pkg/logger"
 )
 
 // New initializes a new webapp server.

@@ -1,11 +1,11 @@
-package users
+package redditvideos
 
 import (
 	"context"
 
-	"github.com/spy16/droplets/domain"
-	"github.com/spy16/droplets/pkg/errors"
-	"github.com/spy16/droplets/pkg/logger"
+	"github.com/johnwyles/vrddt-droplets/domain"
+	"github.com/johnwyles/vrddt-droplets/pkg/errors"
+	"github.com/johnwyles/vrddt-droplets/pkg/logger"
 )
 
 // NewRegistrar initializes a Registration service object.
@@ -24,7 +24,7 @@ type Registrar struct {
 }
 
 // Register creates a new user in the system using the given user object.
-func (reg *Registrar) Register(ctx context.Context, user domain.User) (*domain.User, error) {
+func (reg *Registrar) Register(ctx context.Context, user domain.RedditVideo) (*domain.RedditVideo, error) {
 	if err := user.Validate(); err != nil {
 		return nil, err
 	}

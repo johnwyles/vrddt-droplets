@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/spy16/droplets/domain"
-	"github.com/spy16/droplets/pkg/logger"
+	"github.com/johnwyles/vrddt-droplets/domain"
+	"github.com/johnwyles/vrddt-droplets/pkg/logger"
 )
 
 func addUsersAPI(router *mux.Router, reg registration, ret retriever, logger logger.Logger) {
@@ -50,7 +50,7 @@ func (uc *userController) search(wr http.ResponseWriter, req *http.Request) {
 }
 
 func (uc *userController) post(wr http.ResponseWriter, req *http.Request) {
-	user := domain.User{}
+	user := domain.RedditVideo{}
 	if err := readRequest(req, &user); err != nil {
 		uc.Warnf("failed to read user request: %s", err)
 		respond(wr, http.StatusBadRequest, err)
@@ -69,11 +69,11 @@ func (uc *userController) post(wr http.ResponseWriter, req *http.Request) {
 }
 
 type registration interface {
-	Register(ctx context.Context, user domain.User) (*domain.User, error)
+	Register(ctx context.Context, user domain.RedditVideo) (*domain.RedditVideo, error)
 }
 
 type retriever interface {
-	Get(ctx context.Context, name string) (*domain.User, error)
-	Search(ctx context.Context, tags []string, limit int) ([]domain.User, error)
+	Get(ctx context.Context, name string) (*domain.RedditVideo, error)
+	Search(ctx context.Context, tags []string, limit int) ([]domain.RedditVideo, error)
 	VerifySecret(ctx context.Context, name, secret string) bool
 }

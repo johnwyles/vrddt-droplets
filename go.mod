@@ -1,18 +1,15 @@
-module github.com/spy16/droplets
+module github.com/johnwyles/vrddt-droplets
 
 require (
 	github.com/BurntSushi/toml v0.3.1 // indirect
-	github.com/gorilla/context v1.1.1 // indirect
-	github.com/gorilla/mux v1.6.2
+	github.com/gorilla/mux v1.7.0
 	github.com/kr/pretty v0.1.0 // indirect
-	github.com/mitchellh/mapstructure v1.1.2 // indirect
-	github.com/sirupsen/logrus v1.2.0
-	github.com/spf13/cast v1.3.0 // indirect
-	github.com/spf13/pflag v1.0.3 // indirect
-	github.com/spf13/viper v1.2.1
-	github.com/unrolled/render v0.0.0-20180914162206-b9786414de4d
-	golang.org/x/crypto v0.0.0-20181106171534-e4dc69e5b2fd
-	golang.org/x/sys v0.0.0-20181116161606-93218def8b18 // indirect
+	github.com/sirupsen/logrus v1.3.0
+	github.com/spf13/afero v1.2.1 // indirect
+	github.com/spf13/viper v1.3.1
+	github.com/stretchr/testify v1.3.0 // indirect
+	golang.org/x/crypto v0.0.0-20190211182817-74369b46fc67
+	golang.org/x/sys v0.0.0-20190209173611-3b5209105503 // indirect
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 	gopkg.in/mgo.v2 v2.0.0-20180705113604-9856a29383ce
 )

@@ -1,6 +1,6 @@
 build:
-	@echo "Building droplets at './bin/droplets' ..."
-	@go build -o bin/droplets
+	@echo "Building vrddt-droplets at './bin/vrddt-droplets' ..."
+	@go build -o bin/vrddt-droplets
 
 clean:
 	rm -rf ./bin

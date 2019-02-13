@@ -7,15 +7,15 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/johnwyles/vrddt-droplets/interfaces/mongo"
+	"github.com/johnwyles/vrddt-droplets/interfaces/rest"
+	"github.com/johnwyles/vrddt-droplets/interfaces/web"
+	"github.com/johnwyles/vrddt-droplets/pkg/graceful"
+	"github.com/johnwyles/vrddt-droplets/pkg/logger"
+	"github.com/johnwyles/vrddt-droplets/pkg/middlewares"
+	"github.com/johnwyles/vrddt-droplets/usecases/redditvideos"
+	"github.com/johnwyles/vrddt-droplets/usecases/vrddtvideos"
 	"github.com/spf13/viper"
-	"github.com/spy16/droplets/interfaces/mongo"
-	"github.com/spy16/droplets/interfaces/rest"
-	"github.com/spy16/droplets/interfaces/web"
-	"github.com/spy16/droplets/pkg/graceful"
-	"github.com/spy16/droplets/pkg/logger"
-	"github.com/spy16/droplets/pkg/middlewares"
-	"github.com/spy16/droplets/usecases/posts"
-	"github.com/spy16/droplets/usecases/users"
 )
 
 func main() {
@@ -29,16 +29,16 @@ func main() {
 	defer closeSession()
 
 	lg.Debugf("setting up rest api service")
-	userStore := mongo.NewUserStore(db)
-	postStore := mongo.NewPostStore(db)
+	redditVideoStore := mongo.NewRedditVideoStore(db)
+	vrddtVideoStore := mongo.NewVrddtVideoStore(db)
 
-	userRegistration := users.NewRegistrar(lg, userStore)
-	userRetriever := users.NewRetriever(lg, userStore)
+	userRegistration := redditvideos.NewRegistrar(lg, redditVideoStore)
+	userRetriever := redditvideos.NewRetriever(lg, redditVideoStore)
 
-	postPub := posts.NewPublication(lg, postStore, userStore)
-	postRet := posts.NewRetriever(lg, postStore)
+	vrddtVideoPub := vrddtvideos.NewPublication(lg, vrddtVideoStore, redditVideoStore)
+	vrddtVideoRet := vrddtvideos.NewRetriever(lg, vrddtVideoStore)
 
-	restHandler := rest.New(lg, userRegistration, userRetriever, postRet, postPub)
+	restHandler := rest.New(lg, userRegistration, userRetriever, vrddtVideoRet, vrddtVideoPub)
 	webHandler, err := web.New(lg, web.Config{
 		TemplateDir: cfg.TemplateDir,
 		StaticDir:   cfg.StaticDir,

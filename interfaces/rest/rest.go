@@ -3,11 +3,11 @@ package rest
 import (
 	"net/http"
 
-	"github.com/spy16/droplets/pkg/render"
+	"github.com/johnwyles/vrddt-droplets/pkg/render"
 
 	"github.com/gorilla/mux"
-	"github.com/spy16/droplets/pkg/errors"
-	"github.com/spy16/droplets/pkg/logger"
+	"github.com/johnwyles/vrddt-droplets/pkg/errors"
+	"github.com/johnwyles/vrddt-droplets/pkg/logger"
 )
 
 // New initializes the server with routes exposing the given usecases.

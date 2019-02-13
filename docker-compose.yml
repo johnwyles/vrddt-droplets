@@ -1,7 +1,7 @@
 version: '3.2'
 
 services:
-  droplets:
+  vrddt-droplets:
     build: ./
     environment:
       - MONGO_URI=mongodb://mongo
@@ -11,13 +11,13 @@ services:
     links:
       - mongo
     networks:
-      - droplets_net
+      - vrddt_droplets_net
   mongo:
     image: mongo:3-stretch
     ports:
       - "27017:27017"
     networks:
-      - droplets_net
+      - vrddt_droplets_net
 
 networks:
-  droplets_net:
+  vrddt_droplets_net:

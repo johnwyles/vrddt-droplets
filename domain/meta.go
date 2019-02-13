@@ -4,7 +4,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/spy16/droplets/pkg/errors"
+	"github.com/johnwyles/vrddt-droplets/pkg/errors"
 )
 
 // Meta represents metadata about different entities.

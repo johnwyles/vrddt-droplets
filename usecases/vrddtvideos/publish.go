@@ -1,12 +1,12 @@
-package posts
+package vrddtvideos
 
 import (
 	"context"
 	"fmt"
 
-	"github.com/spy16/droplets/domain"
-	"github.com/spy16/droplets/pkg/errors"
-	"github.com/spy16/droplets/pkg/logger"
+	"github.com/johnwyles/vrddt-droplets/domain"
+	"github.com/johnwyles/vrddt-droplets/pkg/errors"
+	"github.com/johnwyles/vrddt-droplets/pkg/logger"
 )
 
 // NewPublication initializes the publication usecase.
@@ -27,7 +27,7 @@ type Publication struct {
 }
 
 // Publish validates and persists the post into the store.
-func (pub *Publication) Publish(ctx context.Context, post domain.Post) (*domain.Post, error) {
+func (pub *Publication) Publish(ctx context.Context, post domain.VrddtVideo) (*domain.VrddtVideo, error) {
 	if err := post.Validate(); err != nil {
 		return nil, err
 	}
@@ -49,6 +49,6 @@ func (pub *Publication) Publish(ctx context.Context, post domain.Post) (*domain.
 }
 
 // Delete removes the post from the store.
-func (pub *Publication) Delete(ctx context.Context, name string) (*domain.Post, error) {
+func (pub *Publication) Delete(ctx context.Context, name string) (*domain.VrddtVideo, error) {
 	return pub.store.Delete(ctx, name)
 }

@@ -1,10 +1,10 @@
-package users
+package redditvideos
 
 import (
 	"context"
 
-	"github.com/spy16/droplets/domain"
-	"github.com/spy16/droplets/pkg/logger"
+	"github.com/johnwyles/vrddt-droplets/domain"
+	"github.com/johnwyles/vrddt-droplets/pkg/logger"
 )
 
 // NewRetriever initializes an instance of Retriever with given store.
@@ -23,7 +23,7 @@ type Retriever struct {
 }
 
 // Search finds all users matching the tags.
-func (ret *Retriever) Search(ctx context.Context, tags []string, limit int) ([]domain.User, error) {
+func (ret *Retriever) Search(ctx context.Context, tags []string, limit int) ([]domain.RedditVideo, error) {
 	users, err := ret.store.FindAll(ctx, tags, limit)
 	if err != nil {
 		return nil, err
@@ -37,7 +37,7 @@ func (ret *Retriever) Search(ctx context.Context, tags []string, limit int) ([]d
 }
 
 // Get finds a user by name.
-func (ret *Retriever) Get(ctx context.Context, name string) (*domain.User, error) {
+func (ret *Retriever) Get(ctx context.Context, name string) (*domain.RedditVideo, error) {
 	return ret.findUser(ctx, name, true)
 }
 
@@ -52,7 +52,7 @@ func (ret *Retriever) VerifySecret(ctx context.Context, name, secret string) boo
 	return user.CheckSecret(secret)
 }
 
-func (ret *Retriever) findUser(ctx context.Context, name string, stripSecret bool) (*domain.User, error) {
+func (ret *Retriever) findUser(ctx context.Context, name string, stripSecret bool) (*domain.RedditVideo, error) {
 	user, err := ret.store.FindByName(ctx, name)
 	if err != nil {
 		ret.Debugf("failed to find user with name '%s': %v", name, err)

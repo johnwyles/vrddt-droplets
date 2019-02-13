@@ -17,10 +17,8 @@ vendor/
 
 .DS_Store
 
-# temporarily do not track this
-PRACTICES.md
-
 # custom ignores
 expt/
 test.db
 .vscode/
+debug

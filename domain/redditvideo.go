@@ -3,12 +3,12 @@ package domain
 import (
 	"net/mail"
 
-	"github.com/spy16/droplets/pkg/errors"
+	"github.com/johnwyles/vrddt-droplets/pkg/errors"
 	"golang.org/x/crypto/bcrypt"
 )
 
-// User represents information about registered users.
-type User struct {
+// RedditVideo represents information about registered reddit videos.
+type RedditVideo struct {
 	Meta `json:",inline,omitempty" bson:",inline"`
 
 	// Email should contain a valid email of the user.
@@ -19,12 +19,12 @@ type User struct {
 }
 
 // Validate performs basic validation of user information.
-func (user User) Validate() error {
-	if err := user.Meta.Validate(); err != nil {
+func (redditVideo RedditVideo) Validate() error {
+	if err := redditVideo.Meta.Validate(); err != nil {
 		return err
 	}
 
-	_, err := mail.ParseAddress(user.Email)
+	_, err := mail.ParseAddress(redditVideo.Email)
 	if err != nil {
 		return errors.InvalidValue("Email", err.Error())
 	}
@@ -33,17 +33,17 @@ func (user User) Validate() error {
 }
 
 // HashSecret creates bcrypt hash of the password.
-func (user *User) HashSecret() error {
-	bytes, err := bcrypt.GenerateFromPassword([]byte(user.Secret), 4)
+func (redditVideo *RedditVideo) HashSecret() error {
+	bytes, err := bcrypt.GenerateFromPassword([]byte(redditVideo.Secret), 4)
 	if err != nil {
 		return err
 	}
-	user.Secret = string(bytes)
+	redditVideo.Secret = string(bytes)
 	return nil
 }
 
 // CheckSecret compares the cleartext password with the hash.
-func (user User) CheckSecret(password string) bool {
-	err := bcrypt.CompareHashAndPassword([]byte(user.Secret), []byte(password))
+func (redditVideo RedditVideo) CheckSecret(password string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(redditVideo.Secret), []byte(password))
 	return err == nil
 }

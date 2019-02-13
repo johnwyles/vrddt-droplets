@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/spy16/droplets/domain"
-	"github.com/spy16/droplets/pkg/errors"
+	"github.com/johnwyles/vrddt-droplets/domain"
+	"github.com/johnwyles/vrddt-droplets/pkg/errors"
 )
 
 func TestUser_CheckSecret(t *testing.T) {
 	password := "hello@world!"
 
-	user := domain.User{}
+	user := domain.RedditVideo{}
 	user.Secret = password
 	err := user.HashSecret()
 	if err != nil {
@@ -27,19 +27,19 @@ func TestUser_Validate(suite *testing.T) {
 	suite.Parallel()
 
 	cases := []struct {
-		user      domain.User
+		user      domain.RedditVideo
 		expectErr bool
 		errType   string
 	}{
 		{
-			user:      domain.User{},
+			user:      domain.RedditVideo{},
 			expectErr: true,
 			errType:   errors.TypeMissingField,
 		},
 		{
-			user: domain.User{
+			user: domain.RedditVideo{
 				Meta: domain.Meta{
-					Name: "spy16",
+					Name: "johnwyles",
 				},
 				Email: "blah.com",
 			},
@@ -47,11 +47,11 @@ func TestUser_Validate(suite *testing.T) {
 			errType:   errors.TypeInvalidValue,
 		},
 		{
-			user: domain.User{
+			user: domain.RedditVideo{
 				Meta: domain.Meta{
-					Name: "spy16",
+					Name: "johnwyles",
 				},
-				Email: "spy16 <no-mail@nomail.com>",
+				Email: "johnwyles <no-mail@nomail.com>",
 			},
 			expectErr: false,
 		},

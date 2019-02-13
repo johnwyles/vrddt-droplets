@@ -3,7 +3,7 @@ package middlewares
 import (
 	"net/http"
 
-	"github.com/spy16/droplets/pkg/logger"
+	"github.com/johnwyles/vrddt-droplets/pkg/logger"
 )
 
 func requestInfo(req *http.Request) map[string]interface{} {

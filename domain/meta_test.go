@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/spy16/droplets/domain"
-	"github.com/spy16/droplets/pkg/errors"
+	"github.com/johnwyles/vrddt-droplets/domain"
+	"github.com/johnwyles/vrddt-droplets/pkg/errors"
 )
 
 func TestMeta_Validate(suite *testing.T) {

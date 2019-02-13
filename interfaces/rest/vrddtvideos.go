@@ -5,9 +5,9 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/spy16/droplets/domain"
-	"github.com/spy16/droplets/pkg/logger"
-	"github.com/spy16/droplets/pkg/middlewares"
+	"github.com/johnwyles/vrddt-droplets/domain"
+	"github.com/johnwyles/vrddt-droplets/pkg/logger"
+	"github.com/johnwyles/vrddt-droplets/pkg/middlewares"
 )
 
 func addPostsAPI(router *mux.Router, pub postPublication, ret postRetriever, lg logger.Logger) {
@@ -40,7 +40,7 @@ func (pc *postController) get(wr http.ResponseWriter, req *http.Request) {
 }
 
 func (pc *postController) post(wr http.ResponseWriter, req *http.Request) {
-	post := domain.Post{}
+	post := domain.VrddtVideo{}
 	if err := readRequest(req, &post); err != nil {
 		pc.Warnf("failed to read user request: %s", err)
 		respond(wr, http.StatusBadRequest, err)
@@ -70,10 +70,10 @@ func (pc *postController) delete(wr http.ResponseWriter, req *http.Request) {
 }
 
 type postRetriever interface {
-	Get(ctx context.Context, name string) (*domain.Post, error)
+	Get(ctx context.Context, name string) (*domain.VrddtVideo, error)
 }
 
 type postPublication interface {
-	Publish(ctx context.Context, post domain.Post) (*domain.Post, error)
-	Delete(ctx context.Context, name string) (*domain.Post, error)
+	Publish(ctx context.Context, post domain.VrddtVideo) (*domain.VrddtVideo, error)
+	Delete(ctx context.Context, name string) (*domain.VrddtVideo, error)
 }

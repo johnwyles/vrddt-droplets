@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/spy16/droplets/domain"
+	"github.com/johnwyles/vrddt-droplets/domain"
 )
 
 func TestPost_Validate(suite *testing.T) {
@@ -15,37 +15,37 @@ func TestPost_Validate(suite *testing.T) {
 	}
 
 	cases := []struct {
-		post      domain.Post
+		post      domain.VrddtVideo
 		expectErr bool
 	}{
 		{
-			post:      domain.Post{},
+			post:      domain.VrddtVideo{},
 			expectErr: true,
 		},
 		{
-			post: domain.Post{
+			post: domain.VrddtVideo{
 				Meta: validMeta,
 			},
 			expectErr: true,
 		},
 		{
-			post: domain.Post{
+			post: domain.VrddtVideo{
 				Meta: validMeta,
 				Body: "hello world post!",
 			},
 			expectErr: true,
 		},
 		{
-			post: domain.Post{
+			post: domain.VrddtVideo{
 				Meta:  validMeta,
 				Type:  "blah",
-				Owner: "spy16",
+				Owner: "johnwyles",
 				Body:  "hello world post!",
 			},
 			expectErr: true,
 		},
 		{
-			post: domain.Post{
+			post: domain.VrddtVideo{
 				Meta: validMeta,
 				Type: domain.ContentLibrary,
 				Body: "hello world post!",
@@ -53,11 +53,11 @@ func TestPost_Validate(suite *testing.T) {
 			expectErr: true,
 		},
 		{
-			post: domain.Post{
+			post: domain.VrddtVideo{
 				Meta:  validMeta,
 				Type:  domain.ContentLibrary,
 				Body:  "hello world post!",
-				Owner: "spy16",
+				Owner: "johnwyles",
 			},
 			expectErr: false,
 		},

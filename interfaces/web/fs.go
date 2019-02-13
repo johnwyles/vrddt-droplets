@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/spy16/droplets/pkg/logger"
+	"github.com/johnwyles/vrddt-droplets/pkg/logger"
 )
 
 func newSafeFileSystemServer(lg logger.Logger, root string) http.Handler {

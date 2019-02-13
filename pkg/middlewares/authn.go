@@ -4,9 +4,9 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/spy16/droplets/pkg/errors"
-	"github.com/spy16/droplets/pkg/logger"
-	"github.com/spy16/droplets/pkg/render"
+	"github.com/johnwyles/vrddt-droplets/pkg/errors"
+	"github.com/johnwyles/vrddt-droplets/pkg/logger"
+	"github.com/johnwyles/vrddt-droplets/pkg/render"
 )
 
 var authUser = ctxKey("user")
