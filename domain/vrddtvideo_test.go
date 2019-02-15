@@ -4,68 +4,74 @@ import (
 	"fmt"
 	"testing"
 
+	"gopkg.in/mgo.v2/bson"
+
 	"github.com/johnwyles/vrddt-droplets/domain"
 )
 
-func TestPost_Validate(suite *testing.T) {
+func TestVrddtVideo_Validate(suite *testing.T) {
 	suite.Parallel()
 
+	invalidMD5 := []byte("")
+	validMD5 := []byte("h5K3pevUsf64fkbEr1CPVQ==")
+
 	validMeta := domain.Meta{
-		Name: "hello",
+		ID: bson.ObjectIdHex("5c630e846161b663394dd342"),
 	}
 
+	invalidURL := "foo.html"
+	validURL := "https://www.googleapis.com/download/storage/v1/b/vrddt-media/o/5c630e846161b663394dd342.mp4?generation=1549995660850823&alt=media"
+
 	cases := []struct {
-		post      domain.VrddtVideo
-		expectErr bool
+		vrddtVideo domain.VrddtVideo
+		expectErr  bool
 	}{
 		{
-			post:      domain.VrddtVideo{},
-			expectErr: true,
+			vrddtVideo: domain.VrddtVideo{},
+			expectErr:  true,
 		},
 		{
-			post: domain.VrddtVideo{
+			vrddtVideo: domain.VrddtVideo{
 				Meta: validMeta,
 			},
 			expectErr: true,
 		},
 		{
-			post: domain.VrddtVideo{
+			vrddtVideo: domain.VrddtVideo{
+				MD5:  validMD5,
 				Meta: validMeta,
-				Body: "hello world post!",
 			},
 			expectErr: true,
 		},
 		{
-			post: domain.VrddtVideo{
-				Meta:  validMeta,
-				Type:  "blah",
-				Owner: "johnwyles",
-				Body:  "hello world post!",
-			},
-			expectErr: true,
-		},
-		{
-			post: domain.VrddtVideo{
+			vrddtVideo: domain.VrddtVideo{
+				MD5:  validMD5,
 				Meta: validMeta,
-				Type: domain.ContentLibrary,
-				Body: "hello world post!",
-			},
-			expectErr: true,
-		},
-		{
-			post: domain.VrddtVideo{
-				Meta:  validMeta,
-				Type:  domain.ContentLibrary,
-				Body:  "hello world post!",
-				Owner: "johnwyles",
+				URL:  validURL,
 			},
 			expectErr: false,
+		},
+		{
+			vrddtVideo: domain.VrddtVideo{
+				MD5:  invalidMD5,
+				Meta: validMeta,
+				URL:  validURL,
+			},
+			expectErr: true,
+		},
+		{
+			vrddtVideo: domain.VrddtVideo{
+				MD5:  invalidMD5,
+				Meta: validMeta,
+				URL:  invalidURL,
+			},
+			expectErr: true,
 		},
 	}
 
 	for id, cs := range cases {
 		suite.Run(fmt.Sprintf("#%d", id), func(t *testing.T) {
-			err := cs.post.Validate()
+			err := cs.vrddtVideo.Validate()
 			if err != nil {
 				if !cs.expectErr {
 					t.Errorf("was not expecting error, got '%s'", err)

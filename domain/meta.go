@@ -4,23 +4,22 @@ import (
 	"strings"
 	"time"
 
+	"gopkg.in/mgo.v2/bson"
+
 	"github.com/johnwyles/vrddt-droplets/pkg/errors"
 )
 
 // Meta represents metadata about different entities.
 type Meta struct {
-	// Name represents a unique name/identifier for the object.
-	Name string `json:"name" bson:"name"`
+	// CreatedAt represents the time at which this object was created.
+	CreatedAt time.Time `json:"created_at,omitempty" bson:"created_at,omitempty"`
 
-	// Tags can contain additional metadata about the object.
-	Tags []string `json:"tags,omitempty" bson:"tags"`
-
-	// CreateAt represents the time at which this object was created.
-	CreatedAt time.Time `json:"created_at,omitempty" bson:"created_at"`
+	// ID represents a unique identifier for the object.
+	ID bson.ObjectId `json:"id,omitempty" bson:"_id,omitempty"`
 
 	// UpdatedAt represents the time at which this object was last
 	// modified.
-	UpdatedAt time.Time `json:"updated_at,omitempty" bson:"updated_at"`
+	UpdatedAt time.Time `json:"updated_at,omitempty" bson:"updated_at,omitempty"`
 }
 
 // SetDefaults sets sensible defaults on meta.
@@ -34,8 +33,8 @@ func (meta *Meta) SetDefaults() {
 // Validate performs basic validation of the metadata.
 func (meta Meta) Validate() error {
 	switch {
-	case empty(meta.Name):
-		return errors.MissingField("Name")
+	case !meta.ID.Valid():
+		return errors.InvalidValue("ID", "Not a valid bson.ObjectId")
 	}
 	return nil
 }

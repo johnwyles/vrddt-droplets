@@ -1,3 +1,3 @@
-// Package posts has usecases around Post domain entity. This includes
-// publishing and management of posts.
+// Package vrddtvideos has usecases around the VrddtVideo domain entity. This
+// includes creation, retrieval, and destruction of vrddt videos.
 package vrddtvideos

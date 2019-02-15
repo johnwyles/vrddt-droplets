@@ -1,53 +1,37 @@
 package domain
 
 import (
-	"fmt"
+	"net/url"
 	"strings"
 
 	"github.com/johnwyles/vrddt-droplets/pkg/errors"
 )
 
-// Common content types.
-const (
-	ContentLibrary = "library"
-	ContentLink    = "link"
-	ContentVideo   = "video"
-)
-
-var validTypes = []string{ContentLibrary, ContentLink, ContentVideo}
-
-// VrddtVideo represents an article, link, video etc.
+// VrddtVideo represents a vrddt video.
 type VrddtVideo struct {
+	// Meta holds the generic information about the vrddt video.
 	Meta `json:",inline" bson:",inline"`
 
-	// Type should state the type of the content. (e.g., library,
-	// video, link etc.)
-	Type string `json:"type" bson:"type"`
+	// MD5 is the md5 hash of the contents of the vrddt video.
+	MD5 []byte `json:"md5,omitempty" bson:"md5,omitempty"`
 
-	// Body should contain the actual content according to the Type
-	// specified. (e.g. github.com/johnwyles/parens when Type=link)
-	Body string `json:"body" bson:"body"`
-
-	// Owner represents the name of the user who created the vrddtVideo.
-	Owner string `json:"owner" bson:"owner"`
+	// URL represents a publicly accessibly path to the asset.
+	URL string `json:"url,omitempty" bson:"url,omitempty"`
 }
 
-// Validate performs validation of the vrddtVideo.
+// Validate performs validation of the vrddt video.
 func (vrddtVideo VrddtVideo) Validate() error {
 	if err := vrddtVideo.Meta.Validate(); err != nil {
 		return err
 	}
 
-	if len(strings.TrimSpace(vrddtVideo.Body)) == 0 {
-		return errors.MissingField("Body")
+	if len(strings.TrimSpace(string(vrddtVideo.MD5))) == 0 {
+		return errors.MissingField("MD5")
 	}
 
-	if len(strings.TrimSpace(vrddtVideo.Owner)) == 0 {
-		return errors.MissingField("Owner")
-	}
-
-	if !contains(vrddtVideo.Type, validTypes) {
-		return errors.InvalidValue("Type", fmt.Sprintf("type must be one of: %s", strings.Join(validTypes, ",")))
+	_, err := url.ParseRequestURI(vrddtVideo.URL)
+	if err != nil {
+		return errors.MissingField("URL")
 	}
 
 	return nil

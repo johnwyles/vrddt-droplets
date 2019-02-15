@@ -5,75 +5,112 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"gopkg.in/mgo.v2/bson"
+
 	"github.com/johnwyles/vrddt-droplets/domain"
 	"github.com/johnwyles/vrddt-droplets/pkg/logger"
 )
 
-func addUsersAPI(router *mux.Router, reg registration, ret retriever, logger logger.Logger) {
-	uc := &userController{
+func addRedditVideosAPI(router *mux.Router, cons redditConstructor, des redditDestructor, ret redditRetriever, logger logger.Logger) {
+	rvc := &redditVideosController{
 		Logger: logger,
-		reg:    reg,
+		cons:   cons,
+		des:    des,
 		ret:    ret,
 	}
 
-	router.HandleFunc("/v1/users/{name}", uc.get).Methods(http.MethodGet)
-	router.HandleFunc("/v1/users/", uc.search).Methods(http.MethodGet)
-	router.HandleFunc("/v1/users/", uc.post).Methods(http.MethodPost)
+	router.HandleFunc("/reddit_videos/", rvc.create).Methods(http.MethodPost)
+	router.HandleFunc("/reddit_videos/{id}", rvc.getByID).Methods(http.MethodGet)
+	router.HandleFunc("/reddit_videos/{url}", rvc.getByURL).Methods(http.MethodGet)
+	router.HandleFunc("/reddit_videos/", rvc.search).Methods(http.MethodGet)
 }
 
-type userController struct {
+type redditVideosController struct {
 	logger.Logger
-	reg registration
-	ret retriever
+	cons redditConstructor
+	des  redditDestructor
+	ret  redditRetriever
 }
 
-func (uc *userController) get(wr http.ResponseWriter, req *http.Request) {
-	vars := mux.Vars(req)
-	user, err := uc.ret.Get(req.Context(), vars["name"])
-	if err != nil {
-		respondErr(wr, err)
-		return
-	}
-
-	respond(wr, http.StatusOK, user)
-}
-
-func (uc *userController) search(wr http.ResponseWriter, req *http.Request) {
-	vals := req.URL.Query()["t"]
-	users, err := uc.ret.Search(req.Context(), vals, 10)
-	if err != nil {
-		respondErr(wr, err)
-		return
-	}
-
-	respond(wr, http.StatusOK, users)
-}
-
-func (uc *userController) post(wr http.ResponseWriter, req *http.Request) {
-	user := domain.RedditVideo{}
-	if err := readRequest(req, &user); err != nil {
-		uc.Warnf("failed to read user request: %s", err)
+func (rvc *redditVideosController) create(wr http.ResponseWriter, req *http.Request) {
+	redditVideo := domain.RedditVideo{}
+	if err := readRequest(req, &redditVideo); err != nil {
+		rvc.Warnf("failed to read reddit video request: %s", err)
 		respond(wr, http.StatusBadRequest, err)
 		return
 	}
 
-	registered, err := uc.reg.Register(req.Context(), user)
+	registered, err := rvc.cons.Create(req.Context(), &redditVideo)
 	if err != nil {
-		uc.Warnf("failed to register user: %s", err)
+		rvc.Warnf("failed to create reddit video: %s", err)
 		respondErr(wr, err)
 		return
 	}
 
-	uc.Infof("new user registered with id '%s'", registered.Name)
+	rvc.Infof("reddit video created with id '%s'", registered.ID)
 	respond(wr, http.StatusCreated, registered)
 }
 
-type registration interface {
-	Register(ctx context.Context, user domain.RedditVideo) (*domain.RedditVideo, error)
+// TODO: Delete vrddt video if no other reddit videos are associated
+func (rvc *redditVideosController) delete(wr http.ResponseWriter, req *http.Request) {
+	id := bson.ObjectIdHex(mux.Vars(req)["id"])
+	redditVideo, err := rvc.des.Delete(req.Context(), id)
+	if err != nil {
+		respondErr(wr, err)
+		return
+	}
+
+	respond(wr, http.StatusOK, redditVideo)
 }
 
-type retriever interface {
-	Get(ctx context.Context, name string) (*domain.RedditVideo, error)
-	Search(ctx context.Context, tags []string, limit int) ([]domain.RedditVideo, error)
-	VerifySecret(ctx context.Context, name, secret string) bool
+func (rvc *redditVideosController) getByID(wr http.ResponseWriter, req *http.Request) {
+	id := bson.ObjectIdHex(mux.Vars(req)["id"])
+	redditVideo, err := rvc.ret.GetByID(req.Context(), id)
+	switch err.(type) {
+	case nil:
+		respondErr(wr, err)
+		return
+	}
+
+	respond(wr, http.StatusOK, redditVideo)
+}
+
+func (rvc *redditVideosController) getByURL(wr http.ResponseWriter, req *http.Request) {
+	url := mux.Vars(req)["url"]
+	redditVideo, err := rvc.ret.GetByURL(req.Context(), url)
+	if err != nil {
+		respondErr(wr, err)
+		return
+	}
+
+	respond(wr, http.StatusOK, redditVideo)
+}
+
+// TODO
+func (rvc *redditVideosController) search(wr http.ResponseWriter, req *http.Request) {
+	// vals := req.URL.Query()["t"]
+	redditVideos, err := rvc.ret.Search(req.Context(), 10)
+	if err != nil {
+		respondErr(wr, err)
+		return
+	}
+
+	respond(wr, http.StatusOK, redditVideos)
+}
+
+type redditConstructor interface {
+	Create(ctx context.Context, redditVideo *domain.RedditVideo) (*domain.RedditVideo, error)
+	Push(ctx context.Context, redditVideo *domain.RedditVideo) error
+}
+
+type redditDestructor interface {
+	Delete(ctx context.Context, id bson.ObjectId) (*domain.RedditVideo, error)
+	Pop(ctx context.Context) (*domain.RedditVideo, error)
+}
+
+// TODO: Search
+type redditRetriever interface {
+	GetByID(ctx context.Context, id bson.ObjectId) (*domain.RedditVideo, error)
+	GetByURL(ctx context.Context, url string) (*domain.RedditVideo, error)
+	Search(ctx context.Context, limit int) ([]domain.RedditVideo, error)
 }

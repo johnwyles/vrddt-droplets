@@ -5,75 +5,108 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"gopkg.in/mgo.v2/bson"
+
 	"github.com/johnwyles/vrddt-droplets/domain"
 	"github.com/johnwyles/vrddt-droplets/pkg/logger"
-	"github.com/johnwyles/vrddt-droplets/pkg/middlewares"
 )
 
-func addPostsAPI(router *mux.Router, pub postPublication, ret postRetriever, lg logger.Logger) {
-	pc := &postController{}
-	pc.ret = ret
-	pc.pub = pub
-	pc.Logger = lg
+func addVrddtVideosAPI(router *mux.Router, cons vrddtConstructor, des vrddtDestructor, ret vrddtRetriever, lg logger.Logger) {
+	vvc := &vrddtVideosController{}
+	vvc.cons = cons
+	vvc.des = des
+	vvc.ret = ret
+	vvc.Logger = lg
 
-	router.HandleFunc("/v1/posts/{name}", pc.get).Methods(http.MethodGet)
-	router.HandleFunc("/v1/posts/{name}", pc.delete).Methods(http.MethodDelete)
-	router.HandleFunc("/v1/posts", pc.post).Methods(http.MethodPost)
+	router.HandleFunc("/vrddt_videos/{id}", vvc.getByID).Methods(http.MethodGet)
+	router.HandleFunc("/vrddt_videos/{md5}", vvc.getByMD5).Methods(http.MethodGet)
+	router.HandleFunc("/vrddt_videos/", vvc.search).Methods(http.MethodGet)
+	router.HandleFunc("/vrddt_videos/{id}", vvc.delete).Methods(http.MethodDelete)
+	router.HandleFunc("/vrddt_videos/", vvc.create).Methods(http.MethodPost)
 }
 
-type postController struct {
+type vrddtVideosController struct {
 	logger.Logger
 
-	pub postPublication
-	ret postRetriever
+	cons vrddtConstructor
+	des  vrddtDestructor
+	ret  vrddtRetriever
 }
 
-func (pc *postController) get(wr http.ResponseWriter, req *http.Request) {
-	name := mux.Vars(req)["name"]
-	post, err := pc.ret.Get(req.Context(), name)
-	if err != nil {
-		respondErr(wr, err)
-		return
-	}
-
-	respond(wr, http.StatusOK, post)
-}
-
-func (pc *postController) post(wr http.ResponseWriter, req *http.Request) {
-	post := domain.VrddtVideo{}
-	if err := readRequest(req, &post); err != nil {
-		pc.Warnf("failed to read user request: %s", err)
+func (vvc *vrddtVideosController) create(wr http.ResponseWriter, req *http.Request) {
+	vrddtVideo := &domain.VrddtVideo{}
+	if err := readRequest(req, &vrddtVideo); err != nil {
+		vvc.Warnf("failed to read vrddt video request: %s", err)
 		respond(wr, http.StatusBadRequest, err)
 		return
 	}
-	user, _ := middlewares.User(req)
-	post.Owner = user
 
-	published, err := pc.pub.Publish(req.Context(), post)
+	vrddtVideo, err := vvc.cons.Create(req.Context(), vrddtVideo)
 	if err != nil {
 		respondErr(wr, err)
 		return
 	}
 
-	respond(wr, http.StatusCreated, published)
+	respond(wr, http.StatusCreated, vrddtVideo)
 }
 
-func (pc *postController) delete(wr http.ResponseWriter, req *http.Request) {
-	name := mux.Vars(req)["name"]
-	post, err := pc.pub.Delete(req.Context(), name)
+// TODO: Delete only if other reddit videos aren't associated OR delete all
+// associated reddit videos as well
+func (vvc *vrddtVideosController) delete(wr http.ResponseWriter, req *http.Request) {
+	id := bson.ObjectIdHex(mux.Vars(req)["id"])
+	vrddtVideo, err := vvc.des.Delete(req.Context(), id)
 	if err != nil {
 		respondErr(wr, err)
 		return
 	}
 
-	respond(wr, http.StatusOK, post)
+	respond(wr, http.StatusOK, vrddtVideo)
 }
 
-type postRetriever interface {
-	Get(ctx context.Context, name string) (*domain.VrddtVideo, error)
+func (vvc *vrddtVideosController) getByID(wr http.ResponseWriter, req *http.Request) {
+	id := bson.ObjectIdHex(mux.Vars(req)["id"])
+	vrddtVideo, err := vvc.ret.GetByID(req.Context(), id)
+	if err != nil {
+		respondErr(wr, err)
+		return
+	}
+
+	respond(wr, http.StatusOK, vrddtVideo)
 }
 
-type postPublication interface {
-	Publish(ctx context.Context, post domain.VrddtVideo) (*domain.VrddtVideo, error)
-	Delete(ctx context.Context, name string) (*domain.VrddtVideo, error)
+func (vvc *vrddtVideosController) getByMD5(wr http.ResponseWriter, req *http.Request) {
+	md5 := mux.Vars(req)["md5"]
+	vrddtVideo, err := vvc.ret.GetByMD5(req.Context(), md5)
+	if err != nil {
+		respondErr(wr, err)
+		return
+	}
+
+	respond(wr, http.StatusOK, vrddtVideo)
+}
+
+// TODO
+func (vvc *vrddtVideosController) search(wr http.ResponseWriter, req *http.Request) {
+	// vals := req.URL.Query()["t"]
+	vrddtVideos, err := vvc.ret.Search(req.Context(), 10)
+	if err != nil {
+		respondErr(wr, err)
+		return
+	}
+
+	respond(wr, http.StatusOK, vrddtVideos)
+}
+
+type vrddtConstructor interface {
+	Create(ctx context.Context, vrddtVideo *domain.VrddtVideo) (*domain.VrddtVideo, error)
+}
+
+type vrddtDestructor interface {
+	Delete(ctx context.Context, id bson.ObjectId) (*domain.VrddtVideo, error)
+}
+
+type vrddtRetriever interface {
+	GetByID(ctx context.Context, id bson.ObjectId) (*domain.VrddtVideo, error)
+	GetByMD5(ctx context.Context, md5 string) (*domain.VrddtVideo, error)
+	Search(ctx context.Context, limit int) ([]domain.VrddtVideo, error)
 }

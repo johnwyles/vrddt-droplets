@@ -11,15 +11,23 @@ import (
 )
 
 // New initializes the server with routes exposing the given usecases.
-func New(logger logger.Logger, reg registration, ret retriever, postsRet postRetriever, postPub postPublication) http.Handler {
+func New(
+	logger logger.Logger,
+	redditConst redditConstructor,
+	redditDest redditDestructor,
+	redditRet redditRetriever,
+	vrddtConst vrddtConstructor,
+	vrddtDest vrddtDestructor,
+	vrddtRet vrddtRetriever,
+) http.Handler {
 	// setup router with default handlers
 	router := mux.NewRouter()
 	router.NotFoundHandler = http.HandlerFunc(notFoundHandler)
 	router.MethodNotAllowedHandler = http.HandlerFunc(methodNotAllowedHandler)
 
 	// setup api endpoints
-	addUsersAPI(router, reg, ret, logger)
-	addPostsAPI(router, postPub, postsRet, logger)
+	addRedditVideosAPI(router, redditConst, redditDest, redditRet, logger)
+	addVrddtVideosAPI(router, vrddtConst, vrddtDest, vrddtRet, logger)
 
 	return router
 }

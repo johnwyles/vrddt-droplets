@@ -1,3 +1,3 @@
-// Package redditvideos has usecases around RedditVideo domain entity. This includes
-// redditvideo registration, retrieval etc.
+// Package redditvideos has usecases around the RedditVideo domain entity. This
+// includes creation, retrieval, and destruction of reddit videos.
 package redditvideos

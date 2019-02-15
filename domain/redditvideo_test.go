@@ -4,54 +4,45 @@ import (
 	"fmt"
 	"testing"
 
+	"gopkg.in/mgo.v2/bson"
+
 	"github.com/johnwyles/vrddt-droplets/domain"
 	"github.com/johnwyles/vrddt-droplets/pkg/errors"
 )
 
-func TestUser_CheckSecret(t *testing.T) {
-	password := "hello@world!"
-
-	user := domain.RedditVideo{}
-	user.Secret = password
-	err := user.HashSecret()
-	if err != nil {
-		t.Errorf("was not expecting error, got '%s'", err)
-	}
-
-	if !user.CheckSecret(password) {
-		t.Errorf("CheckSecret expected to return true, but got false")
-	}
-}
-
-func TestUser_Validate(suite *testing.T) {
+func TestRedditVideo_Validate(suite *testing.T) {
 	suite.Parallel()
 
+	validID := bson.ObjectIdHex("5c630e756161b663394dd341")
+	validMeta := domain.Meta{
+		ID: validID,
+	}
+
+	invalidURL := "foo.html"
+	validURL := "https://www.reddit.com/r/MadeMeSmile/comments/apt8tb/need_more_people_like_him/"
+
 	cases := []struct {
-		user      domain.RedditVideo
-		expectErr bool
-		errType   string
+		redditVideo domain.RedditVideo
+		expectErr   bool
+		errType     string
 	}{
 		{
-			user:      domain.RedditVideo{},
-			expectErr: true,
-			errType:   errors.TypeMissingField,
+			redditVideo: domain.RedditVideo{},
+			expectErr:   true,
+			errType:     errors.TypeInvalidValue,
 		},
 		{
-			user: domain.RedditVideo{
-				Meta: domain.Meta{
-					Name: "johnwyles",
-				},
-				Email: "blah.com",
+			redditVideo: domain.RedditVideo{
+				Meta: validMeta,
+				URL:  invalidURL,
 			},
 			expectErr: true,
 			errType:   errors.TypeInvalidValue,
 		},
 		{
-			user: domain.RedditVideo{
-				Meta: domain.Meta{
-					Name: "johnwyles",
-				},
-				Email: "johnwyles <no-mail@nomail.com>",
+			redditVideo: domain.RedditVideo{
+				Meta: validMeta,
+				URL:  validURL,
 			},
 			expectErr: false,
 		},
@@ -59,7 +50,7 @@ func TestUser_Validate(suite *testing.T) {
 
 	for id, cs := range cases {
 		suite.Run(fmt.Sprintf("Case#%d", id), func(t *testing.T) {
-			testValidation(t, cs.user, cs.expectErr, cs.errType)
+			testValidation(t, cs.redditVideo, cs.expectErr, cs.errType)
 		})
 	}
 }

@@ -1,12 +1,14 @@
 package main
 
 import (
-	"context"
+	// "context"
 	"net/http"
 	"os"
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/spf13/viper"
+
 	"github.com/johnwyles/vrddt-droplets/interfaces/mongo"
 	"github.com/johnwyles/vrddt-droplets/interfaces/rest"
 	"github.com/johnwyles/vrddt-droplets/interfaces/web"
@@ -15,7 +17,6 @@ import (
 	"github.com/johnwyles/vrddt-droplets/pkg/middlewares"
 	"github.com/johnwyles/vrddt-droplets/usecases/redditvideos"
 	"github.com/johnwyles/vrddt-droplets/usecases/vrddtvideos"
-	"github.com/spf13/viper"
 )
 
 func main() {
@@ -32,13 +33,23 @@ func main() {
 	redditVideoStore := mongo.NewRedditVideoStore(db)
 	vrddtVideoStore := mongo.NewVrddtVideoStore(db)
 
-	userRegistration := redditvideos.NewRegistrar(lg, redditVideoStore)
-	userRetriever := redditvideos.NewRetriever(lg, redditVideoStore)
+	redditVideoConstructor := redditvideos.NewConstructor(lg, redditVideoStore)
+	redditVideoDestructor := redditvideos.NewDestructor(lg, redditVideoStore)
+	redditVideoRetriever := redditvideos.NewRetriever(lg, redditVideoStore)
 
-	vrddtVideoPub := vrddtvideos.NewPublication(lg, vrddtVideoStore, redditVideoStore)
-	vrddtVideoRet := vrddtvideos.NewRetriever(lg, vrddtVideoStore)
+	vrddtVideoConstructor := vrddtvideos.NewConstructor(lg, vrddtVideoStore)
+	vrddtVideoDestructor := vrddtvideos.NewDestructor(lg, vrddtVideoStore)
+	vrddtVideoRetriever := vrddtvideos.NewRetriever(lg, vrddtVideoStore)
 
-	restHandler := rest.New(lg, userRegistration, userRetriever, vrddtVideoRet, vrddtVideoPub)
+	restHandler := rest.New(
+		lg,
+		redditVideoConstructor,
+		redditVideoDestructor,
+		redditVideoRetriever,
+		vrddtVideoConstructor,
+		vrddtVideoDestructor,
+		vrddtVideoRetriever,
+	)
 	webHandler, err := web.New(lg, web.Config{
 		TemplateDir: cfg.TemplateDir,
 		StaticDir:   cfg.StaticDir,
@@ -55,11 +66,11 @@ func main() {
 }
 
 func setupServer(cfg config, lg logger.Logger, web http.Handler, rest http.Handler) *graceful.Server {
-	rest = middlewares.WithBasicAuth(lg, rest,
-		middlewares.UserVerifierFunc(func(ctx context.Context, name, secret string) bool {
-			return secret == "secret@123"
-		}),
-	)
+	// rest = middlewares.WithBasicAuth(lg, rest,
+	// 	middlewares.UserVerifierFunc(func(ctx context.Context, name, secret string) bool {
+	// 		return secret == "secret123"
+	// 	}),
+	// )
 
 	router := mux.NewRouter()
 	router.PathPrefix("/api").Handler(http.StripPrefix("/api", rest))
@@ -82,16 +93,18 @@ type config struct {
 	TemplateDir     string
 	GracefulTimeout time.Duration
 	MongoURI        string
+	RabbitMQURI     string
 }
 
 func loadConfig() config {
-	viper.SetDefault("MONGO_URI", "mongodb://localhost/droplets")
+	viper.SetDefault("ADDR", ":8080")
+	viper.SetDefault("GRACEFUL_TIMEOUT", 20*time.Second)
 	viper.SetDefault("LOG_LEVEL", "debug")
 	viper.SetDefault("LOG_FORMAT", "text")
-	viper.SetDefault("ADDR", ":8080")
-	viper.SetDefault("STATIC_DIR", "./web/static/")
-	viper.SetDefault("TEMPLATE_DIR", "./web/templates/")
-	viper.SetDefault("GRACEFUL_TIMEOUT", 20*time.Second)
+	viper.SetDefault("MONGO_URI", "mongodb://admin:password@localhost:27017/vrddt")
+	viper.SetDefault("RABBITMQ_URI", "amqp://admin:password@localhost:5672")
+	viper.SetDefault("STATIC_DIR", "../../web/static/")
+	viper.SetDefault("TEMPLATE_DIR", "../../web/templates/")
 
 	viper.ReadInConfig()
 	viper.AutomaticEnv()
@@ -99,13 +112,12 @@ func loadConfig() config {
 	return config{
 		// application configuration
 		Addr:            viper.GetString("ADDR"),
-		StaticDir:       viper.GetString("STATIC_DIR"),
-		TemplateDir:     viper.GetString("TEMPLATE_DIR"),
+		GracefulTimeout: viper.GetDuration("GRACEFUL_TIMEOUT"),
 		LogLevel:        viper.GetString("LOG_LEVEL"),
 		LogFormat:       viper.GetString("LOG_FORMAT"),
-		GracefulTimeout: viper.GetDuration("GRACEFUL_TIMEOUT"),
-
-		// store configuration
-		MongoURI: viper.GetString("MONGO_URI"),
+		MongoURI:        viper.GetString("MONGO_URI"),
+		RabbitMQURI:     viper.GetString("RABBITMQ_URI"),
+		StaticDir:       viper.GetString("STATIC_DIR"),
+		TemplateDir:     viper.GetString("TEMPLATE_DIR"),
 	}
 }
