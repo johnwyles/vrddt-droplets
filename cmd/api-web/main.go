@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/johnwyles/vrddt-droplets/interfaces/mongo"
+	"github.com/johnwyles/vrddt-droplets/interfaces/rabbitmq"
 	"github.com/johnwyles/vrddt-droplets/interfaces/rest"
 	"github.com/johnwyles/vrddt-droplets/interfaces/web"
 	"github.com/johnwyles/vrddt-droplets/pkg/graceful"
@@ -23,23 +24,32 @@ func main() {
 	cfg := loadConfig()
 	lg := logger.New(os.Stderr, cfg.LogLevel, cfg.LogFormat)
 
-	db, closeSession, err := mongo.Connect(cfg.MongoURI, true)
+	lg.Debugf("setting up rest api service")
+
+	db, closeMongoSession, err := mongo.Connect(cfg.MongoURI, true)
 	if err != nil {
 		lg.Fatalf("failed to connect to mongodb: %v", err)
 	}
-	defer closeSession()
+	defer closeMongoSession()
 
-	lg.Debugf("setting up rest api service")
 	redditVideoStore := mongo.NewRedditVideoStore(db)
 	vrddtVideoStore := mongo.NewVrddtVideoStore(db)
 
-	redditVideoConstructor := redditvideos.NewConstructor(lg, redditVideoStore)
-	redditVideoDestructor := redditvideos.NewDestructor(lg, redditVideoStore)
-	redditVideoRetriever := redditvideos.NewRetriever(lg, redditVideoStore)
+	q, closeRabbitMQSession, err := rabbitmq.Connect(cfg.RabbitMQURI)
+	if err != nil {
+		lg.Fatalf("failed to connect to rabbitmq: %v", err)
+	}
+	defer closeRabbitMQSession()
+
+	workQueue := rabbitmq.NewWorkQueue(q)
 
 	vrddtVideoConstructor := vrddtvideos.NewConstructor(lg, vrddtVideoStore)
 	vrddtVideoDestructor := vrddtvideos.NewDestructor(lg, vrddtVideoStore)
 	vrddtVideoRetriever := vrddtvideos.NewRetriever(lg, vrddtVideoStore)
+
+	redditVideoConstructor := redditvideos.NewConstructor(lg, workQueue, redditVideoStore)
+	redditVideoDestructor := redditvideos.NewDestructor(lg, workQueue, redditVideoStore)
+	redditVideoRetriever := redditvideos.NewRetriever(lg, redditVideoStore, vrddtVideoStore)
 
 	restHandler := rest.New(
 		lg,

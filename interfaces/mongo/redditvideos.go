@@ -90,7 +90,7 @@ func (rvs *RedditVideoStore) FindByURL(ctx context.Context, url string) (*domain
 	col := rvs.db.C(colRedditVideos)
 
 	redditVideo := domain.RedditVideo{}
-	if err := col.FindId(bson.M{"url": url}).One(&redditVideo); err != nil {
+	if err := col.Find(bson.M{"url": url}).One(&redditVideo); err != nil {
 		if err == mgo.ErrNotFound {
 			return nil, errors.ResourceNotFound("RedditVideo URL", url)
 		}

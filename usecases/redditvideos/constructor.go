@@ -8,10 +8,11 @@ import (
 	"github.com/johnwyles/vrddt-droplets/pkg/logger"
 )
 
-// NewCreator initializes a Creation service object.
-func NewConstructor(lg logger.Logger, store Store) *Constructor {
+// NewConstructor initializes a Creation service object.
+func NewConstructor(lg logger.Logger, queue Queue, store Store) *Constructor {
 	return &Constructor{
 		Logger: lg,
+		queue:  queue,
 		store:  store,
 	}
 }
@@ -44,7 +45,7 @@ func (cons *Constructor) Create(ctx context.Context, redditVideo *domain.RedditV
 	return saved, nil
 }
 
-// Pop pops a reddit video from the queue.
+// Push pops a reddit video from the queue.
 func (cons *Constructor) Push(ctx context.Context, redditVideo *domain.RedditVideo) error {
 	cons.queue.MakeClient(ctx)
 	if err := cons.queue.Push(ctx, redditVideo); err != nil {

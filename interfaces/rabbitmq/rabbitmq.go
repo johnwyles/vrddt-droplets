@@ -5,7 +5,7 @@ import (
 )
 
 // Connect to a RabbitMQ instance located by rabbitmq-uri using the `amqp` package
-func Connect(uri string, failFast bool) (*amqp.Connection, func() error, error) {
+func Connect(uri string) (*amqp.Connection, func() error, error) {
 	_, err := amqp.ParseURI(uri)
 	if err != nil {
 		return nil, doNothing, err

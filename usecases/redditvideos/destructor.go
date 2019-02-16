@@ -9,20 +9,21 @@ import (
 	"github.com/johnwyles/vrddt-droplets/pkg/logger"
 )
 
-// NewCreator initializes the vrddt  usecase.
-func NewDestructor(lg logger.Logger, store Store) *Destructor {
+// NewDestructor initializes the vrddt  usecase.
+func NewDestructor(lg logger.Logger, queue Queue, store Store) *Destructor {
 	return &Destructor{
 		Logger: lg,
+		queue:  queue,
 		store:  store,
 	}
 }
 
-// Creator implements the publishing usecases.
+// Destructor implements the publishing usecases.
 type Destructor struct {
 	logger.Logger
 
-	store Store
 	queue Queue
+	store Store
 }
 
 // Delete removes the vrddt video from the store.

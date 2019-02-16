@@ -7,13 +7,15 @@ import (
 
 	"github.com/johnwyles/vrddt-droplets/domain"
 	"github.com/johnwyles/vrddt-droplets/pkg/logger"
+	"github.com/johnwyles/vrddt-droplets/usecases/vrddtvideos"
 )
 
 // NewRetriever initializes an instance of Retriever with given store.
-func NewRetriever(lg logger.Logger, store Store) *Retriever {
+func NewRetriever(lg logger.Logger, store Store, vrddtStore vrddtvideos.Store) *Retriever {
 	return &Retriever{
-		Logger: lg,
-		store:  store,
+		Logger:     lg,
+		store:      store,
+		vrddtStore: vrddtStore,
 	}
 }
 
@@ -21,11 +23,11 @@ func NewRetriever(lg logger.Logger, store Store) *Retriever {
 type Retriever struct {
 	logger.Logger
 
-	store Store
-	queue Queue
+	store      Store
+	vrddtStore vrddtvideos.Store
 }
 
-// Get finds a reddit video by id.
+// GetByID finds a reddit video by id.
 func (ret *Retriever) GetByID(ctx context.Context, id bson.ObjectId) (*domain.RedditVideo, error) {
 	redditVideo, err := ret.store.FindByID(ctx, id)
 	if err != nil {
@@ -36,7 +38,7 @@ func (ret *Retriever) GetByID(ctx context.Context, id bson.ObjectId) (*domain.Re
 	return redditVideo, nil
 }
 
-// Get finds a reddit video by url.
+// GetByURL finds a reddit video by url.
 func (ret *Retriever) GetByURL(ctx context.Context, url string) (*domain.RedditVideo, error) {
 	redditVideo, err := ret.store.FindByURL(ctx, url)
 	if err != nil {
@@ -45,6 +47,16 @@ func (ret *Retriever) GetByURL(ctx context.Context, url string) (*domain.RedditV
 	}
 
 	return redditVideo, nil
+}
+
+func (ret *Retriever) GetVrddtVideoByID(ctx context.Context, id bson.ObjectId) (*domain.VrddtVideo, error) {
+	vrddtVideo, err := ret.vrddtStore.FindByID(ctx, id)
+	if err != nil {
+		ret.Debugf("failed to find vrddt video with id '%s': %v", id.Hex(), err)
+		return nil, err
+	}
+
+	return vrddtVideo, nil
 }
 
 // TODO
@@ -61,6 +73,7 @@ func (ret *Retriever) Search(ctx context.Context, limit int) ([]domain.RedditVid
 // Query represents parameters for executing a search. Zero valued fields
 // in the query will be ignored.
 type Query struct {
-	ID  bson.ObjectId `json:"id,omitempty"`
-	URL string        `json:"url,omitempty"`
+	ID           bson.ObjectId `json:"id,omitempty"`
+	URL          string        `json:"url,omitempty"`
+	VrddtVideoID bson.ObjectId `json:"vrddt_video_id,omitempty"`
 }
