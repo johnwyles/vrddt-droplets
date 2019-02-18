@@ -41,14 +41,14 @@ func main() {
 	}
 	defer closeRabbitMQSession()
 
-	workQueue := rabbitmq.NewWorkQueue(q)
+	redditVideoWorkQueue := rabbitmq.NewRedditVideoWorkQueue(q)
 
 	vrddtVideoConstructor := vrddtvideos.NewConstructor(lg, vrddtVideoStore)
 	vrddtVideoDestructor := vrddtvideos.NewDestructor(lg, vrddtVideoStore)
 	vrddtVideoRetriever := vrddtvideos.NewRetriever(lg, vrddtVideoStore)
 
-	redditVideoConstructor := redditvideos.NewConstructor(lg, workQueue, redditVideoStore)
-	redditVideoDestructor := redditvideos.NewDestructor(lg, workQueue, redditVideoStore)
+	redditVideoConstructor := redditvideos.NewConstructor(lg, redditVideoWorkQueue, redditVideoStore)
+	redditVideoDestructor := redditvideos.NewDestructor(lg, redditVideoWorkQueue, redditVideoStore)
 	redditVideoRetriever := redditvideos.NewRetriever(lg, redditVideoStore, vrddtVideoStore)
 
 	restHandler := rest.New(
@@ -76,12 +76,6 @@ func main() {
 }
 
 func setupServer(cfg config, lg logger.Logger, web http.Handler, rest http.Handler) *graceful.Server {
-	// rest = middlewares.WithBasicAuth(lg, rest,
-	// 	middlewares.UserVerifierFunc(func(ctx context.Context, name, secret string) bool {
-	// 		return secret == "secret123"
-	// 	}),
-	// )
-
 	router := mux.NewRouter()
 	router.PathPrefix("/api").Handler(http.StripPrefix("/api", rest))
 	router.PathPrefix("/").Handler(web)
@@ -111,8 +105,8 @@ func loadConfig() config {
 	viper.SetDefault("GRACEFUL_TIMEOUT", 20*time.Second)
 	viper.SetDefault("LOG_LEVEL", "debug")
 	viper.SetDefault("LOG_FORMAT", "text")
-	viper.SetDefault("MONGO_URI", "mongodb://admin:password@localhost:27017/vrddt")
-	viper.SetDefault("RABBITMQ_URI", "amqp://admin:password@localhost:5672")
+	viper.SetDefault("VRDDT_MONGO_URI", "mongodb://admin:password@localhost:27017/vrddt")
+	viper.SetDefault("VRDDT_RABBITMQ_URI", "amqp://admin:password@localhost:5672")
 	viper.SetDefault("STATIC_DIR", "../../web/static/")
 	viper.SetDefault("TEMPLATE_DIR", "../../web/templates/")
 
@@ -125,8 +119,8 @@ func loadConfig() config {
 		GracefulTimeout: viper.GetDuration("GRACEFUL_TIMEOUT"),
 		LogLevel:        viper.GetString("LOG_LEVEL"),
 		LogFormat:       viper.GetString("LOG_FORMAT"),
-		MongoURI:        viper.GetString("MONGO_URI"),
-		RabbitMQURI:     viper.GetString("RABBITMQ_URI"),
+		MongoURI:        viper.GetString("VRDDT_MONGO_URI"),
+		RabbitMQURI:     viper.GetString("VRDDT_RABBITMQ_URI"),
 		StaticDir:       viper.GetString("STATIC_DIR"),
 		TemplateDir:     viper.GetString("TEMPLATE_DIR"),
 	}

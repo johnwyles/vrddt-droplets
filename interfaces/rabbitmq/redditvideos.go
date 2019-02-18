@@ -26,9 +26,9 @@ type ConnectionType int
 
 // TODO: Don't hardcode the below in NewWorkQueue()
 
-// NewWorkQueue initializes a work queue with the given queue handle.
-func NewWorkQueue(c *amqp.Connection) *WorkQueue {
-	return &WorkQueue{
+// NewRedditVideoWorkQueue initializes a work queue with the given queue handle.
+func NewRedditVideoWorkQueue(c *amqp.Connection) *RedditVideoWorkQueue {
+	return &RedditVideoWorkQueue{
 		bindingKeyName: "vrddt-bindingkey-converter",
 		connection:     c,
 		exchangeName:   "vrddt-exchange-converter",
@@ -36,8 +36,8 @@ func NewWorkQueue(c *amqp.Connection) *WorkQueue {
 	}
 }
 
-// WorkQueue provides functions for queueing work entities in RabbitMQ.
-type WorkQueue struct {
+// RedditVideoWorkQueue provides functions for queueing work entities in RabbitMQ.
+type RedditVideoWorkQueue struct {
 	delivery       <-chan amqp.Delivery
 	channel        *amqp.Channel
 	connection     *amqp.Connection
@@ -51,7 +51,7 @@ type WorkQueue struct {
 
 // MakeClient is implemented but does nothing as there is no additional steps
 // required by RabbitMQ to make the connection a client vs a consumer
-func (w *WorkQueue) MakeClient(ctx context.Context) error {
+func (w *RedditVideoWorkQueue) MakeClient(ctx context.Context) error {
 	w.connectionType = Client
 	err := w.init(ctx)
 
@@ -60,7 +60,7 @@ func (w *WorkQueue) MakeClient(ctx context.Context) error {
 
 // MakeConsumer is implemented but does nothing as there is no additional steps
 // required by RabbitMQ to make the connection a client vs a consumer
-func (w *WorkQueue) MakeConsumer(ctx context.Context) error {
+func (w *RedditVideoWorkQueue) MakeConsumer(ctx context.Context) error {
 	if err := w.init(ctx); err != nil {
 		return err
 	}
@@ -95,7 +95,7 @@ func (w *WorkQueue) MakeConsumer(ctx context.Context) error {
 }
 
 // Pop will pull off a Reddit video struct from the queue
-func (w *WorkQueue) Pop(ctx context.Context) (*domain.RedditVideo, error) {
+func (w *RedditVideoWorkQueue) Pop(ctx context.Context) (*domain.RedditVideo, error) {
 	if w.connectionType != Consumer {
 		return nil, fmt.Errorf("connection type must be '%s' but it is '%s' instead", Consumer, w.connectionType)
 	}
@@ -113,7 +113,7 @@ func (w *WorkQueue) Pop(ctx context.Context) (*domain.RedditVideo, error) {
 }
 
 // Push will put a Reddit video struct onto the queue
-func (w *WorkQueue) Push(ctx context.Context, rv *domain.RedditVideo) (err error) {
+func (w *RedditVideoWorkQueue) Push(ctx context.Context, rv *domain.RedditVideo) (err error) {
 	if w.connectionType != Client {
 		return fmt.Errorf("connection type must be '%s' but it is '%s' instead", Client, w.connectionType)
 	}
@@ -146,7 +146,7 @@ func (w *WorkQueue) Push(ctx context.Context, rv *domain.RedditVideo) (err error
 
 // init initializes the connection by setting up all the particular details
 // about a RabbitMQ queue
-func (w *WorkQueue) init(ctx context.Context) error {
+func (w *RedditVideoWorkQueue) init(ctx context.Context) error {
 	var err error
 
 	w.channel, err = w.connection.Channel()

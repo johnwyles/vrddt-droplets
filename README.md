@@ -14,3 +14,13 @@ To test and build, run `make all`.
 ## License
 
 TODO
+    - INTERNALS
+        - Makefile is broken
+        - Dockerize
+        - Start and complete worker
+    - CMD
+        - ADMIN
+        - CLI
+            - Finish API subcommand
+        - API-WEB
+            - Authorization / OAuth
