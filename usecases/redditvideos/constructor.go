@@ -47,6 +47,10 @@ func (cons *Constructor) Create(ctx context.Context, redditVideo *domain.RedditV
 
 // Push pops a reddit video from the queue.
 func (cons *Constructor) Push(ctx context.Context, redditVideo *domain.RedditVideo) error {
+	if err := redditVideo.Validate(); err != nil {
+		return err
+	}
+
 	cons.queue.MakeClient(ctx)
 	if err := cons.queue.Push(ctx, redditVideo); err != nil {
 		cons.Debugf("failed to pop reddit video: %v", err)

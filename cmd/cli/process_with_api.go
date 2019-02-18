@@ -24,14 +24,7 @@ func ProcessWithAPI(cfg config, lg logger.Logger) {
 	}
 
 	apiURL := cfg.VrddtAPIURI + "/reddit_videos/"
-	query := map[string]string{"url": cfg.RedditURL}
-
-	jsonData, err := json.Marshal(query)
-	if err != nil {
-		lg.Fatalf("JSON Marshal: %s", err)
-	}
-
-	req, err := http.NewRequest(http.MethodGet, apiURL, bytes.NewBuffer(jsonData))
+	req, err := http.NewRequest(http.MethodGet, apiURL, nil)
 	if err != nil {
 		lg.Fatalf("NewRequest: %s", err)
 	}
@@ -39,17 +32,62 @@ func ProcessWithAPI(cfg config, lg logger.Logger) {
 
 	client := &http.Client{}
 
+	q := req.URL.Query()
+	q.Add("url", cfg.RedditURL)
+	req.URL.RawQuery = q.Encode()
+
 	resp, err := client.Do(req)
 	if err != nil {
 		lg.Fatalf("Do: %s", err)
 	}
 	defer resp.Body.Close()
 
-	vrddtVideo := &domain.VrddtVideo{}
+	if resp.StatusCode == 404 {
+		resp.Body.Close()
 
-	// Use json.Decode for reading streams of JSON data
-	if err := json.NewDecoder(resp.Body).Decode(&vrddtVideo); err != nil {
-		lg.Warnf("Unable to decode response into a vrddt video: %s", err)
+		lg.Debugf("reddit video does not exist yet for URL: %s", cfg.RedditURL)
+		jsonData, err := json.Marshal(map[string]string{"url": cfg.RedditURL})
+		if err != nil {
+			lg.Fatalf("There was an issue marshalling JSON: %s", err)
+		}
+
+		req, err = http.NewRequest(http.MethodPost, apiURL+"queue", bytes.NewBuffer(jsonData))
+		if err != nil {
+			lg.Fatalf("An error occurred POST to API URL: %s Data: %s Reason: %s", apiURL, string(jsonData), err)
+		}
+
+		resp, err = client.Do(req)
+		if err != nil {
+			lg.Fatalf("Queueing error: %s", err)
+		}
+		defer resp.Body.Close()
+	} else if resp.StatusCode < 200 || resp.StatusCode > 400 {
+		lg.Fatalf("Received a status code < 200 or > 400: %d reason: %s", resp.StatusCode, resp.Status)
+	} else {
+		redditVideo := &domain.RedditVideo{}
+		if err = json.NewDecoder(resp.Body).Decode(&redditVideo); err != nil {
+			lg.Warnf("Unable to decode response into a reddit video: %s", err)
+		}
+
+		req, err = http.NewRequest(http.MethodGet, cfg.VrddtAPIURI+"/vrddt_videos/"+redditVideo.VrddtVideoID.Hex(), nil)
+		if err != nil {
+			lg.Fatalf("VrddtVideo: %s", err)
+		}
+		req.Header.Set("Content-Type", "application/json")
+
+		resp, err = client.Do(req)
+		if err != nil {
+			lg.Fatalf("Queueing error: %s", err)
+		}
+		defer resp.Body.Close()
+
+		vrddtVideo := map[string]string{"url": ""}
+		if err = json.NewDecoder(resp.Body).Decode(&vrddtVideo); err != nil {
+			lg.Fatalf("Unable to decode response into a vrddt video: %s", err)
+		}
+
+		lg.Infof("Got vrddt video URL: %#v", vrddtVideo["url"])
+		return
 	}
 
 	var pollTime int
@@ -80,8 +118,48 @@ func ProcessWithAPI(cfg config, lg logger.Logger) {
 	for {
 		select {
 		case <-timeout:
-			lg.Fatalf("Operation timed out at after '%d' seconds.", timeout)
+			lg.Fatalf("Operation timed out at after '%d' seconds.", timeoutTime)
 		case <-tick:
+			req, err = http.NewRequest(http.MethodGet, apiURL, nil)
+			if err != nil {
+				lg.Fatalf("An error occurred GET to API URL: %s Reason: %s", apiURL, err)
+			}
+			q := req.URL.Query()
+			q.Add("url", cfg.RedditURL)
+			req.URL.RawQuery = q.Encode()
+
+			resp, err = client.Do(req)
+			if err != nil {
+				lg.Fatalf("Do LOOP: %s", err)
+			}
+			defer resp.Body.Close()
+
+			if resp.StatusCode == 404 {
+				lg.Debugf("Got status 404 so vrddt video does not exist yet")
+				continue
+			} else if resp.StatusCode < 200 || resp.StatusCode > 400 {
+				lg.Fatalf("Received a status code < 200 or > 400: %d reason: %s", resp.StatusCode, resp.Status)
+			}
+
+			// Use json.Decode for reading streams of JSON data
+			redditVideo := &domain.RedditVideo{}
+			if err = json.NewDecoder(resp.Body).Decode(&redditVideo); err != nil {
+				lg.Warnf("Unable to decode response into a reddit video: %s", err)
+			}
+
+			req, err = http.NewRequest(http.MethodGet, apiURL+"/"+redditVideo.VrddtVideoID.Hex(), nil)
+			if err != nil {
+				lg.Fatalf("VrddtVideo: %s", err)
+			}
+			req.Header.Set("Content-Type", "application/json")
+
+			vrddtVideo := &domain.VrddtVideo{}
+			if err = json.NewDecoder(resp.Body).Decode(&vrddtVideo); err != nil {
+				lg.Warnf("Unable to decode response into a vrddt video: %s", err)
+			}
+
+			lg.Infof("Got vrddt video: %#v", vrddtVideo)
+
 			return
 		}
 	}

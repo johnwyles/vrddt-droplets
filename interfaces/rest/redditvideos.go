@@ -2,6 +2,7 @@ package rest
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -22,13 +23,14 @@ func addRedditVideosAPI(router *mux.Router, cons redditConstructor, des redditDe
 	}
 
 	// TODO: Implement search / ALL
-	router.HandleFunc("/reddit_videos/queue", rvc.enqueue).Methods(http.MethodPost)
-	router.HandleFunc("/reddit_videos/queue", rvc.dequeue).Methods(http.MethodGet)
+	rvrouter := router.PathPrefix("/reddit_videos").Subrouter()
+	rvrouter.HandleFunc("/queue", rvc.enqueue).Methods(http.MethodPost)
+	rvrouter.HandleFunc("/queue", rvc.dequeue).Methods(http.MethodGet)
 	// router.HandleFunc("/reddit_videos/query/{query}", rvc.search).Methods(http.MethodGet)
-	router.HandleFunc("/reddit_videos/{id}", rvc.getByID).Methods(http.MethodGet)
-	router.HandleFunc("/reddit_videos/{id}/vrddt_video", rvc.getVrddtVideo).Methods(http.MethodGet)
-	router.HandleFunc("/reddit_videos/{url}", rvc.getByURL).Methods(http.MethodGet)
-	// router.HandleFunc("/reddit_videos/", rvc.search).Methods(http.MethodGet)
+	rvrouter.HandleFunc("/{id:[0-9a-fA-F]+}", rvc.getByID).Methods(http.MethodGet)
+	rvrouter.HandleFunc("/{id:[0-9a-fA-F]+}/vrddt_video", rvc.getVrddtVideo).Methods(http.MethodGet)
+	rvrouter.HandleFunc("/", rvc.getByURL).Queries("url", "{url}").Methods(http.MethodGet)
+	// router.HandleFunc("/", rvc.search).Methods(http.MethodGet)
 }
 
 type redditVideosController struct {
@@ -65,8 +67,9 @@ func (rvc *redditVideosController) enqueue(wr http.ResponseWriter, req *http.Req
 	}
 
 	if dbRedditVideo != nil {
-		rvc.Infof("reddit video already found in db with id '%s'", dbRedditVideo.ID)
-		respond(wr, http.StatusCreated, dbRedditVideo)
+		err := fmt.Errorf("reddit video already exists in db with id '%s' for Reddit URL: %s", dbRedditVideo.ID, redditVideo.URL)
+		rvc.Debugf("reddit video already exists: %s", err)
+		respondErr(wr, err)
 		return
 	}
 
@@ -95,53 +98,68 @@ func (rvc *redditVideosController) dequeue(wr http.ResponseWriter, req *http.Req
 
 // TODO: Delete vrddt video if no other reddit videos are associated
 func (rvc *redditVideosController) delete(wr http.ResponseWriter, req *http.Request) {
-	id := bson.ObjectIdHex(mux.Vars(req)["id"])
-	redditVideo, err := rvc.des.Delete(req.Context(), id)
-	if err != nil {
-		respondErr(wr, err)
-		return
+	if id, ok := mux.Vars(req)["id"]; ok {
+		bsonID := bson.ObjectIdHex(id)
+		redditVideo, err := rvc.des.Delete(req.Context(), bsonID)
+		if err != nil {
+			respondErr(wr, err)
+			return
+		}
+
+		respond(wr, http.StatusOK, redditVideo)
 	}
 
-	respond(wr, http.StatusOK, redditVideo)
+	return
 }
 
 func (rvc *redditVideosController) getByID(wr http.ResponseWriter, req *http.Request) {
-	id := bson.ObjectIdHex(mux.Vars(req)["id"])
-	redditVideo, err := rvc.ret.GetByID(req.Context(), id)
-	if err != nil {
-		respondErr(wr, err)
-		return
+	if id, ok := mux.Vars(req)["id"]; ok {
+		bsonID := bson.ObjectIdHex(id)
+		redditVideo, err := rvc.ret.GetByID(req.Context(), bsonID)
+		if err != nil {
+			respondErr(wr, err)
+			return
+		}
+
+		respond(wr, http.StatusOK, redditVideo)
 	}
 
-	respond(wr, http.StatusOK, redditVideo)
+	return
 }
 
 func (rvc *redditVideosController) getVrddtVideo(wr http.ResponseWriter, req *http.Request) {
-	id := bson.ObjectIdHex(mux.Vars(req)["id"])
-	redditVideo, err := rvc.ret.GetByID(req.Context(), id)
-	if err != nil {
-		respondErr(wr, err)
-		return
+	if id, ok := mux.Vars(req)["id"]; ok {
+		bsonID := bson.ObjectId(id)
+		redditVideo, err := rvc.ret.GetByID(req.Context(), bsonID)
+		if err != nil {
+			respondErr(wr, err)
+			return
+		}
+
+		vrddtVideo, err := rvc.ret.GetVrddtVideoByID(req.Context(), redditVideo.VrddtVideoID)
+		if err != nil {
+			respondErr(wr, err)
+			return
+		}
+
+		respond(wr, http.StatusOK, vrddtVideo)
 	}
 
-	vrddtVideo, err := rvc.ret.GetVrddtVideoByID(req.Context(), redditVideo.VrddtVideoID)
-	if err != nil {
-		respondErr(wr, err)
-		return
-	}
-
-	respond(wr, http.StatusOK, vrddtVideo)
+	return
 }
 
 func (rvc *redditVideosController) getByURL(wr http.ResponseWriter, req *http.Request) {
-	url := mux.Vars(req)["url"]
-	redditVideo, err := rvc.ret.GetByURL(req.Context(), url)
-	if err != nil {
-		respondErr(wr, err)
-		return
+	if url, ok := mux.Vars(req)["url"]; ok {
+		redditVideo, err := rvc.ret.GetByURL(req.Context(), url)
+		if err != nil {
+			respondErr(wr, err)
+			return
+		}
+
+		respond(wr, http.StatusOK, redditVideo)
 	}
 
-	respond(wr, http.StatusOK, redditVideo)
+	return
 }
 
 // TODO

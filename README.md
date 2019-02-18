@@ -19,8 +19,8 @@ TODO
         - Dockerize
         - Start and complete worker
     - CMD
+        - Flags and subcommands are MESSY and need massive cleaning up
         - ADMIN
         - CLI
-            - Finish API subcommand
         - API-WEB
             - Authorization / OAuth
