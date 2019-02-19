@@ -12,7 +12,8 @@ import (
 func NewConstructor(lg logger.Logger, store Store) *Constructor {
 	return &Constructor{
 		Logger: lg,
-		store:  store,
+
+		store: store,
 	}
 }
 

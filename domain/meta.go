@@ -22,6 +22,15 @@ type Meta struct {
 	UpdatedAt time.Time `json:"updated_at,omitempty" bson:"updated_at,omitempty"`
 }
 
+// NewMeta returns a Meta struct with sensible detaults.
+func NewMeta() Meta {
+	return Meta{
+		ID:        bson.NewObjectId(),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+}
+
 // SetDefaults sets sensible defaults on meta.
 func (meta *Meta) SetDefaults() {
 	if meta.CreatedAt.IsZero() {

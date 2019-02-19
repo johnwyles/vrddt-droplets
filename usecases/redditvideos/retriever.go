@@ -13,7 +13,8 @@ import (
 // NewRetriever initializes an instance of Retriever with given store.
 func NewRetriever(lg logger.Logger, store Store, vrddtStore vrddtvideos.Store) *Retriever {
 	return &Retriever{
-		Logger:     lg,
+		Logger: lg,
+
 		store:      store,
 		vrddtStore: vrddtStore,
 	}
@@ -40,7 +41,13 @@ func (ret *Retriever) GetByID(ctx context.Context, id bson.ObjectId) (*domain.Re
 
 // GetByURL finds a reddit video by url.
 func (ret *Retriever) GetByURL(ctx context.Context, url string) (*domain.RedditVideo, error) {
-	redditVideo, err := ret.store.FindByURL(ctx, url)
+	// TODO: If there is a way to do this entirely client-side we can save some time
+	finalURL, err := domain.GetFinalURL(url)
+	if err != nil {
+		return nil, err
+	}
+
+	redditVideo, err := ret.store.FindByURL(ctx, finalURL)
 	if err != nil {
 		ret.Debugf("failed to find reddit video with url '%s': %v", url, err)
 		return nil, err
@@ -49,6 +56,7 @@ func (ret *Retriever) GetByURL(ctx context.Context, url string) (*domain.RedditV
 	return redditVideo, nil
 }
 
+// GetVrddtVideoByID will return the vrddt video by it's ID in the store.
 func (ret *Retriever) GetVrddtVideoByID(ctx context.Context, id bson.ObjectId) (*domain.VrddtVideo, error) {
 	vrddtVideo, err := ret.vrddtStore.FindByID(ctx, id)
 	if err != nil {
@@ -59,9 +67,9 @@ func (ret *Retriever) GetVrddtVideoByID(ctx context.Context, id bson.ObjectId) (
 	return vrddtVideo, nil
 }
 
-// TODO
 // Search finds all the vrddt videos matching the parameters in the query.
-func (ret *Retriever) Search(ctx context.Context, limit int) ([]domain.RedditVideo, error) {
+// TODO: This is incomplete
+func (ret *Retriever) Search(ctx context.Context, q []string, limit int) ([]domain.RedditVideo, error) {
 	redditVideos, err := ret.store.FindAll(ctx, limit)
 	if err != nil {
 		return nil, err

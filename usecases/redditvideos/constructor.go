@@ -32,6 +32,10 @@ func (cons *Constructor) Create(ctx context.Context, redditVideo *domain.RedditV
 		return nil, err
 	}
 
+	if err := redditVideo.SetFinalURL(); err != nil {
+		return nil, err
+	}
+
 	if cons.store.Exists(ctx, redditVideo.ID) {
 		return nil, errors.Conflict("ID", redditVideo.ID.Hex())
 	}
@@ -48,6 +52,10 @@ func (cons *Constructor) Create(ctx context.Context, redditVideo *domain.RedditV
 // Push pops a reddit video from the queue.
 func (cons *Constructor) Push(ctx context.Context, redditVideo *domain.RedditVideo) error {
 	if err := redditVideo.Validate(); err != nil {
+		return err
+	}
+
+	if err := redditVideo.SetFinalURL(); err != nil {
 		return err
 	}
 

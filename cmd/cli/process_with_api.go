@@ -43,19 +43,14 @@ func ProcessWithAPI(cfg config, lg logger.Logger) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode == 404 {
-		resp.Body.Close()
-
 		lg.Debugf("reddit video does not exist yet for URL: %s", cfg.RedditURL)
-		jsonData, err := json.Marshal(map[string]string{"url": cfg.RedditURL})
-		if err != nil {
-			lg.Fatalf("There was an issue marshalling JSON: %s", err)
-		}
-
+		redditVideo := domain.NewRedditVideo()
 		req, err = http.NewRequest(http.MethodPost, apiURL+"queue", bytes.NewBuffer(jsonData))
 		if err != nil {
 			lg.Fatalf("An error occurred POST to API URL: %s Data: %s Reason: %s", apiURL, string(jsonData), err)
 		}
 
+		resp.Body.Close()
 		resp, err = client.Do(req)
 		if err != nil {
 			lg.Fatalf("Queueing error: %s", err)

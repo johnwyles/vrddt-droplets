@@ -19,6 +19,13 @@ type VrddtVideo struct {
 	URL string `json:"url,omitempty" bson:"url,omitempty"`
 }
 
+// NewVrddtVideo will return a new vrddt video.
+func NewVrddtVideo() *VrddtVideo {
+	return &VrddtVideo{
+		Meta: NewMeta(),
+	}
+}
+
 // Validate performs validation of the vrddt video.
 func (vrddtVideo VrddtVideo) Validate() error {
 	if err := vrddtVideo.Meta.Validate(); err != nil {

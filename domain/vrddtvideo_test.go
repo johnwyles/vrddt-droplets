@@ -16,7 +16,7 @@ func TestVrddtVideo_Validate(suite *testing.T) {
 	validMD5 := []byte("h5K3pevUsf64fkbEr1CPVQ==")
 
 	validMeta := domain.Meta{
-		ID: bson.ObjectIdHex("5c630e846161b663394dd342"),
+		ID: bson.NewObjectId(),
 	}
 
 	invalidURL := "foo.html"

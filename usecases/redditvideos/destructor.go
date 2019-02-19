@@ -13,8 +13,9 @@ import (
 func NewDestructor(lg logger.Logger, queue Queue, store Store) *Destructor {
 	return &Destructor{
 		Logger: lg,
-		queue:  queue,
-		store:  store,
+
+		queue: queue,
+		store: store,
 	}
 }
 

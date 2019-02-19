@@ -13,7 +13,8 @@ import (
 func NewRetriever(lg logger.Logger, store Store) *Retriever {
 	return &Retriever{
 		Logger: lg,
-		store:  store,
+
+		store: store,
 	}
 }
 

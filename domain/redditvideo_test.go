@@ -13,9 +13,8 @@ import (
 func TestRedditVideo_Validate(suite *testing.T) {
 	suite.Parallel()
 
-	validID := bson.ObjectIdHex("5c630e756161b663394dd341")
 	validMeta := domain.Meta{
-		ID: validID,
+		ID: bson.NewObjectId(),
 	}
 
 	invalidURL := "foo.html"

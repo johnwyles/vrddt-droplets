@@ -3,6 +3,9 @@ package domain_test
 import (
 	"fmt"
 	"testing"
+	"time"
+
+	"gopkg.in/mgo.v2/bson"
 
 	"github.com/johnwyles/vrddt-droplets/domain"
 	"github.com/johnwyles/vrddt-droplets/pkg/errors"
@@ -11,11 +14,39 @@ import (
 func TestMeta_Validate(suite *testing.T) {
 	suite.Parallel()
 
+	var invalidID bson.ObjectId
+
+	invalidMeta := domain.Meta{
+		ID: invalidID,
+	}
+
+	validMeta := domain.Meta{
+		ID:        bson.NewObjectId(),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+
+	newValidMeta := domain.NewMeta()
+
 	cases := []struct {
 		meta      domain.Meta
 		expectErr bool
 		errType   string
-	}{}
+	}{
+		{
+			meta:      invalidMeta,
+			expectErr: true,
+			errType:   "InvalidValue",
+		},
+		{
+			meta:      validMeta,
+			expectErr: false,
+		},
+		{
+			meta:      newValidMeta,
+			expectErr: false,
+		},
+	}
 
 	for id, cs := range cases {
 		suite.Run(fmt.Sprintf("Case#%d", id), func(t *testing.T) {

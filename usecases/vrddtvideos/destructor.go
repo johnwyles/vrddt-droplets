@@ -13,7 +13,8 @@ import (
 func NewDestructor(lg logger.Logger, store Store) *Destructor {
 	return &Destructor{
 		Logger: lg,
-		store:  store,
+
+		store: store,
 	}
 }
 
