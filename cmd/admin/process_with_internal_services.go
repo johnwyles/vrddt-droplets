@@ -14,6 +14,8 @@ import (
 	// "github.com/johnwyles/vrddt-droplets/usecases/vrddtvideos"
 )
 
+// ProcessWithInternalServices will process the Reddit URL using the internal
+// services directly instead of calling the public API
 func ProcessWithInternalServices(cfg config, lg logger.Logger) {
 	_, err := url.ParseRequestURI(cfg.RedditURL)
 	if err != nil {
