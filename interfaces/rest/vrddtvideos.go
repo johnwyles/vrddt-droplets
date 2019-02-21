@@ -27,6 +27,7 @@ func addVrddtVideosAPI(router *mux.Router, cons vrddtConstructor, des vrddtDestr
 	vvrouter.HandleFunc("/{id}", vvc.getByID).Methods(http.MethodGet)
 	vvrouter.HandleFunc("/{md5}", vvc.getByMD5).Methods(http.MethodGet)
 
+	// vvrouter.HandleFun("/", vvc.create).Methods(http.MethodPost)
 	// vvrouter.HandleFunc("/", vvc.search).Methods(http.MethodGet)
 	// vvrouter.HandleFunc("/{id}", vvc.delete).Methods(http.MethodDelete)
 	// vvrouter.HandleFunc("/", vvc.create).Methods(http.MethodPost)

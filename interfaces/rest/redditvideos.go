@@ -26,6 +26,8 @@ func addRedditVideosAPI(router *mux.Router, cons redditConstructor, des redditDe
 	// TODO: Implement search / ALL
 	rvrouter := router.PathPrefix("/reddit_videos").Subrouter()
 
+	// rvrouter.HandleFunc("/", rvrouter.create).Methods(http.MethodPost)
+
 	// These will handle API calls to the internal queue
 	// TODO: Needs auth
 	// rvrouter.HandleFunc("/queue", rvc.enqueue).Methods(http.MethodPost)
