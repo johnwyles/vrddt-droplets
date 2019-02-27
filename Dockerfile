@@ -1,4 +1,4 @@
-FROM golang:1.11 as builder
+FROM golang:1.12-alpine as builder
 RUN mkdir /vrddt-droplets-src
 WORKDIR /vrddt-droplets-src
 COPY ./ .
