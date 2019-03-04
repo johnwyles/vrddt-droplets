@@ -7,7 +7,7 @@ Project skeleton and more importantly architecture from: https://github.com/spy1
 
 ## Building
 
-vrddt uses `go mod` (available from `go 1.11`) for dependency management.
+vrddt uses `go mod` (available from go 1.11) for dependency management.
 
 To test and build, run `make all`.
 
