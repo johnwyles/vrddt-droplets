@@ -1,6 +1,9 @@
 package main
 
 import (
+	"context"
+	"time"
+
 	"github.com/johnwyles/vrddt-droplets/interfaces/mongo"
 	"github.com/johnwyles/vrddt-droplets/interfaces/rabbitmq"
 	"github.com/johnwyles/vrddt-droplets/pkg/logger"
@@ -49,22 +52,22 @@ func Converter(cfg config, lg logger.Logger) {
 			ctx := context.TODO()
 
 			if goErr := conv.GetWork(&ctx); goErr != nil {
-				getLogger().Warn().Err(err).Msg("error getting element of work")
+				lg.Errorf("error getting element of work: %s", err)
 				errs <- goErr
 				successes <- false
 				return
 			}
-			getLogger().Info().Msgf("Received new request (%d) for work", messageCount)
+			lg.Infof("Received new request (%d) for work", messageCount)
 
 			if goErr := conv.DoWork(&ctx); goErr != nil {
-				getLogger().Warn().Err(err).Msg("unable to perform work")
+				lg.Warnf("unable to perform work: %s", err)
 				errs <- goErr
 				successes <- false
 				return
 			}
 
 			if goErr := conv.CompleteWork(&ctx); goErr != nil {
-				getLogger().Warn().Err(err).Msg("unable to complete work")
+				lg.Warnf("unable to complete work: %s", err)
 				errs <- goErr
 				successes <- false
 				return
@@ -79,10 +82,10 @@ func Converter(cfg config, lg logger.Logger) {
 		case err := <-errs:
 			switch err {
 			case reddit.JSONTitleErr, reddit.JSONVideoURLErr, reddit.NotDASHErr:
-				getLogger().Warn().Msgf("Warning while processing media: %s", err)
+				lg.Warnf("Warning while processing media: %s", err)
 			default:
 				errorCount++
-				getLogger().Error().Msgf("Error (#%d of %d allowed) while processing media: %s",
+				lg.Errorf("Error (#%d of %d allowed) while processing media: %s",
 					errorCount,
 					cliContext.Int("max-error"),
 					err,
@@ -90,7 +93,7 @@ func Converter(cfg config, lg logger.Logger) {
 			}
 		case success := <-successes:
 			successCount++
-			getLogger().Info().Msgf("Success (#%d): %#v", successCount, success)
+			lg.Infof("Success (#%d): %#v", successCount, success)
 		}
 
 		// Let's take a break
@@ -99,7 +102,7 @@ func Converter(cfg config, lg logger.Logger) {
 		// We have exceeded the max-error count so break out of the loop
 		// This will exit the infinite for-loop because we exceeded "max-error"
 		if errorCount >= cliContext.Int("WorkerConverter.MaxErrors") {
-			getLogger().Error().Msgf("Maximum errors (#%d) while processing videos", errorCount)
+			lg.Errorf("Maximum errors (#%d) while processing videos", errorCount)
 			break
 		}
 	}
