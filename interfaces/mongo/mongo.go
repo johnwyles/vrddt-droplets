@@ -9,16 +9,14 @@ import (
 func Connect(uri string, failFast bool) (*mgo.Database, func(), error) {
 	di, err := mgo.ParseURL(uri)
 	if err != nil {
-		return nil, doNothing, err
+		return nil, func() {}, err
 	}
 
 	di.FailFast = failFast
 	session, err := mgo.DialWithInfo(di)
 	if err != nil {
-		return nil, doNothing, err
+		return nil, func() {}, err
 	}
 
 	return session.DB(di.Database), session.Close, nil
 }
-
-func doNothing() {}

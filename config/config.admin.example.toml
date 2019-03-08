@@ -1,0 +1,18 @@
+[Queue]
+    Type = "rabbitmq"
+    [Queue.RabbitMQ]
+        BindingKeyName = "vrddt-bindingkey-converter"
+        ExchangeName   = "vrddt-exchange-converter"
+    	QueueName      = "vrddt-queue-converter"
+    	URI            = "amqp://admin:password@localhost:5672"
+
+[Store]
+    Type = "mongo"
+    [Store.Mongo]
+        RedditVideosCollectionName = "reddit_videos"
+    	URI                        = "mongodb://admin:password@localhost:27017/vrddt"
+        VrddtVideosCollectionName  = "vrddt_videos"
+
+[Log]
+    Format  = "text"
+    Level   = "debug"

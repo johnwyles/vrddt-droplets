@@ -1,90 +1,213 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
+	cli "gopkg.in/urfave/cli.v2"
+	"gopkg.in/urfave/cli.v2/altsrc"
 
+	"github.com/johnwyles/vrddt-droplets/interfaces/config"
 	"github.com/johnwyles/vrddt-droplets/pkg/logger"
 )
 
-func main() {
-	cfg := loadConfig()
-	lg := logger.New(os.Stderr, cfg.LogLevel, cfg.LogFormat)
-	lg.Infof("config: %#v", cfg)
+var loggerHandle logger.Logger
 
-	// cmdProcessWithInternalServices will setup the
-	// "process-with-internal-services" sub-command
-	var cmdProcessWithInternalServices = &cobra.Command{
-		Use:   "process-with-internal-services",
-		Short: "Use the internal store and queue to process a reddit video",
-		Long: `Use the internal store and queue to process a reddit video
- rather than hitting the public API`,
-		Args: cobra.MinimumNArgs(0),
-		Run: func(cmd *cobra.Command, args []string) {
-			ProcessWithInternalServices(cfg, lg)
+// allCommands are all of the commands we are able to run
+func allCommands(cfg *config.Config) []*cli.Command {
+	return []*cli.Command{
+		InsertJSONToQueueCommand(cfg),
+		ProcessWithInternalServicesCommand(cfg),
+	}
+}
+
+func main() {
+	// Setup some sensible defaults for the vrddt configuration - this is
+	// somewhat ugly but necessary if we want to override configuration file
+	// options with the arguments on the command line
+	cfg := &config.Config{
+		Log: config.LogConfig{
+			Format: "text",
+			Level:  "debug",
+		},
+		Queue: config.QueueConfig{
+			Memory: config.QueueMemoryConfig{
+				MaxSize: 100000,
+			},
+			RabbitMQ: config.QueueRabbitMQConfig{
+				BindingKeyName: "vrddt-bindingkey-converter",
+				ExchangeName:   "vrddt-exchange-converter",
+				QueueName:      "vrddt-queue-converter",
+				URI:            "amqp://admin:password@localhost:5672",
+			},
+			Type: config.QueueConfigRabbitMQ,
+		},
+		Store: config.StoreConfig{
+			Memory: config.StoreMemoryConfig{
+				MaxSize: 100000,
+			},
+			Mongo: config.StoreMongoConfig{
+				RedditVideosCollectionName: "reddit_videos",
+				URI:                        "mongodb://admin:password@localhost:27017/vrddt",
+				VrddtVideosCollectionName:  "vrddt_videos",
+			},
+			Type: config.StoreConfigMongo,
 		},
 	}
-	cmdProcessWithInternalServices.Flags().StringVarP(
-		&cfg.RedditURL,
-		"reddit-url",
-		"r",
-		"",
-		"Reddit URL",
-	)
-	cmdProcessWithInternalServices.MarkFlagRequired("reddit-url")
-	viper.BindPFlag("VRDDT_REDDIT_URL", cmdProcessWithInternalServices.PersistentFlags().Lookup("reddit-url"))
 
-	var rootCmd = &cobra.Command{Use: "vrddt-admin"}
-	rootCmd.Flags().StringVarP(
-		&cfg.MongoURI,
-		"mongodb-uri",
-		"m",
-		"mongodb://admin:password@localhost:27017/vrddt",
-		"MongoDB URI with credentials, host, port, and database",
-	)
-	cmdProcessWithInternalServices.MarkFlagRequired("mongo-uri")
-	viper.BindPFlag("VRDDT_MONGODB_URI", rootCmd.PersistentFlags().Lookup("mongodb-uri"))
+	// Loading of all the configuration from environment variables, toml
+	// configuration file, or command-line flags
+	flags := []cli.Flag{
+		&cli.StringFlag{
+			EnvVars: []string{"VRDDT_CONFIG"},
+			Name:    "config",
+			Usage:   "vrddt-admin TOML configuration file",
+			Value:   "",
+		},
+		altsrc.NewStringFlag(
+			&cli.StringFlag{
+				Aliases:     []string{"lf"},
+				Destination: &cfg.Log.Format,
+				EnvVars:     []string{"VRDDT_LOG_FORMAT"},
+				Name:        "Log.Format",
+				Usage:       "Logging format",
+				Value:       cfg.Log.Format,
+			},
+		),
+		altsrc.NewStringFlag(
+			&cli.StringFlag{
+				Aliases:     []string{"ll"},
+				Destination: &cfg.Log.Level,
+				EnvVars:     []string{"VRDDT_LOG_LEVEL"},
+				Name:        "Log.Level",
+				Usage:       "Set logging level",
+				Value:       cfg.Log.Level,
+			},
+		),
+		altsrc.NewStringFlag(
+			&cli.StringFlag{
+				Destination: &cfg.Queue.RabbitMQ.BindingKeyName,
+				EnvVars:     []string{"VRDDT_RABBITMQ_BINDING_KEY_NAME"},
+				Name:        "Queue.RabbitMQ.BindingKeyName",
+				Usage:       "RabbitMQ binding key name",
+				Value:       cfg.Queue.RabbitMQ.BindingKeyName,
+			},
+		),
+		altsrc.NewStringFlag(
+			&cli.StringFlag{
+				Destination: &cfg.Queue.RabbitMQ.ExchangeName,
+				EnvVars:     []string{"VRDDT_RABBITMQ_EXCHANGE_NAME"},
+				Name:        "Queue.RabbitMQ.ExchangeName",
+				Usage:       "RabbitMQ exchange name",
+				Value:       cfg.Queue.RabbitMQ.ExchangeName,
+			},
+		),
+		altsrc.NewStringFlag(
+			&cli.StringFlag{
+				Destination: &cfg.Queue.RabbitMQ.URI,
+				EnvVars:     []string{"VRDDT_RABBITMQ_URI"},
+				Name:        "Queue.RabbitMQ.URI",
+				Usage:       "RabbitMQ connection string",
+				Value:       cfg.Queue.RabbitMQ.URI,
+			},
+		),
+		altsrc.NewStringFlag(
+			&cli.StringFlag{
+				Destination: &cfg.Store.Mongo.RedditVideosCollectionName,
+				EnvVars:     []string{"VRDDT_STORE_MONGO_REDDIT_VIDEOS_COLLECTION_NAME"},
+				Name:        "Store.Mongo.RedditVideosCollectionName",
+				Usage:       "Collection name where we will store information about the Reddit videos",
+				Value:       cfg.Store.Mongo.RedditVideosCollectionName,
+			},
+		),
+		altsrc.NewStringFlag(
+			&cli.StringFlag{
+				Destination: &cfg.Store.Mongo.URI,
+				EnvVars:     []string{"VRDDT_STORE_MONGO_URI"},
+				Name:        "Store.Mongo.URI",
+				Usage:       "MongoDB connection string",
+				Value:       cfg.Store.Mongo.URI,
+			},
+		),
+		altsrc.NewStringFlag(
+			&cli.StringFlag{
+				Destination: &cfg.Store.Mongo.VrddtVideosCollectionName,
+				EnvVars:     []string{"VRDDT_STORE_MONGO_VRDDT_VIDEOS_COLLECTION_NAME"},
+				Name:        "Store.Mongo.ReddtiVideosCollectionName",
+				Usage:       "Collection name where we will store information about the vrddt videos",
+				Value:       cfg.Store.Mongo.VrddtVideosCollectionName,
+			},
+		),
+	}
 
-	rootCmd.Flags().StringVarP(
-		&cfg.RabbitMQURI,
-		"rabbitmq-uri",
-		"m",
-		"amqp://admin:password@localhost:5672t",
-		"RabbitMQ URI with credentials, host, port",
-	)
-	cmdProcessWithInternalServices.MarkFlagRequired("rabbitmq-uri")
-	viper.BindPFlag("VRDDT_RABBITMQ_URI", rootCmd.PersistentFlags().Lookup("rabbitmq-uri"))
+	app := &cli.App{
+		Action: rootAction(cfg),
+		After:  afterResources(cfg),
+		Authors: []*cli.Author{
+			{
+				Name:  "John Wyles",
+				Email: "john@johnwyles.com",
+			},
+		},
+		Before: altsrc.InitInputSourceWithContext(
+			flags,
+			func(context *cli.Context) (altsrc.InputSourceContext, error) {
+				if context.IsSet("config") {
+					return altsrc.NewTomlSourceFromFile(context.String("config"))
+				}
 
-	rootCmd.AddCommand(cmdProcessWithInternalServices)
-	rootCmd.Execute()
+				return &altsrc.MapInputSource{}, nil
+			},
+		),
+		Prepare:  prepareResources(cfg),
+		Commands: allCommands(cfg),
+		Flags:    flags,
+		Name:     "vrddt-admin",
+		Usage:    "vrddt internal CLI admin tool",
+		Version:  "v0.0.1",
+	}
+
+	cli.HelpFlag = &cli.BoolFlag{
+		Name:    "help",
+		Aliases: []string{"h"},
+		Usage:   "Print the help",
+	}
+
+	cli.VersionFlag = &cli.BoolFlag{
+		Name:    "version",
+		Aliases: []string{"v"},
+		Usage:   "Print the current version",
+	}
+
+	if err := app.Run(os.Args); err != nil {
+		loggerHandle.Fatalf("An error occured running the application", err)
+		os.Exit(1)
+	}
 }
 
-type config struct {
-	LogLevel    string
-	LogFormat   string
-	MongoURI    string
-	PollTime    int
-	RabbitMQURI string
-	RedditURL   string
-	Timeout     int
+// rootAction is the what we execute if no commands are specified
+func rootAction(cfg *config.Config) cli.ActionFunc {
+	return func(cliContext *cli.Context) (err error) {
+		cli.ShowAppHelp(cliContext)
+		return fmt.Errorf("No sub-command specified")
+	}
 }
 
-func loadConfig() config {
-	viper.SetDefault("VRDDT_LOG_LEVEL", "debug")
-	viper.SetDefault("VRDDT_LOG_FORMAT", "text")
-	viper.SetDefault("VRDDT_MONGO_URI", "mongodb://admin:password@localhost:27017/vrddt")
-	viper.SetDefault("VRDDT_RABBITMQ_URI", "amqp://admin:password@localhost:5672")
+// afterResources will execute after Action() to cleanup
+func afterResources(cfg *config.Config) cli.AfterFunc {
+	return func(cliContext *cli.Context) (err error) {
+		// Cleanup connections
+		return
+	}
+}
 
-	viper.ReadInConfig()
-	viper.AutomaticEnv()
+// prepareResources will setup some common shared resources amoung all of the
+// commands and make them avaiable to use
+func prepareResources(cfg *config.Config) cli.PrepareFunc {
+	return func(cliContext *cli.Context) (err error) {
+		// Initalize connections
+		loggerHandle = logger.New(os.Stderr, cfg.Log.Level, cfg.Log.Format)
 
-	return config{
-		// application configuration
-		LogLevel:    viper.GetString("VRDDT_LOG_LEVEL"),
-		LogFormat:   viper.GetString("VRDDT_LOG_FORMAT"),
-		MongoURI:    viper.GetString("VRDDT_MONGO_URI"),
-		RabbitMQURI: viper.GetString("VRDDT_RABBITMQ_URI"),
+		return nil
 	}
 }

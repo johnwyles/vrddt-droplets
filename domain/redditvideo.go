@@ -181,9 +181,9 @@ func (r RedditVideo) Validate() error {
 	// 	return errors.InvalidValue("AudioURL", err.Error())
 	// }
 
-	if err := r.Meta.Validate(); err != nil {
-		return err
-	}
+	// if err := r.Meta.Validate(); err != nil {
+	// 	return err
+	// }
 
 	// if len(strings.TrimSpace(string(redditVideo.Title))) == 0 {
 	// 	return errors.MissingField("Title")
