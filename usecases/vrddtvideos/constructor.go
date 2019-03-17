@@ -8,7 +8,7 @@ import (
 	"github.com/johnwyles/vrddt-droplets/pkg/logger"
 )
 
-// NewCreator initializes the vrddt  usecase.
+// NewConstructor initializes the vrddt  usecase.
 func NewConstructor(lg logger.Logger, store Store) *Constructor {
 	return &Constructor{
 		Logger: lg,
@@ -17,7 +17,7 @@ func NewConstructor(lg logger.Logger, store Store) *Constructor {
 	}
 }
 
-// Creator implements the publishing usecases.
+// Constructor implements the publishing usecases.
 type Constructor struct {
 	logger.Logger
 

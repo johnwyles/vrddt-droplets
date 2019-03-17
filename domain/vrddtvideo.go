@@ -43,12 +43,3 @@ func (vrddtVideo VrddtVideo) Validate() error {
 
 	return nil
 }
-
-func contains(val string, vals []string) bool {
-	for _, item := range vals {
-		if val == item {
-			return true
-		}
-	}
-	return false
-}

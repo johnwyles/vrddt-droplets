@@ -1,0 +1,6 @@
+[CLI]
+    APIURI = "http://localhost:8080"
+
+[Log]
+    Format  = "text"
+    Level   = "debug"

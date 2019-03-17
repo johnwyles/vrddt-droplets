@@ -9,7 +9,7 @@ import (
 	"github.com/johnwyles/vrddt-droplets/pkg/logger"
 )
 
-// NewCreator initializes the vrddt  usecase.
+// NewDestructor initializes the vrddt  usecase.
 func NewDestructor(lg logger.Logger, store Store) *Destructor {
 	return &Destructor{
 		Logger: lg,
@@ -18,7 +18,7 @@ func NewDestructor(lg logger.Logger, store Store) *Destructor {
 	}
 }
 
-// Creator implements the publishing usecases.
+// Destructor implements the publishing usecases.
 type Destructor struct {
 	logger.Logger
 

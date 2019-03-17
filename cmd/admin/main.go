@@ -8,10 +8,22 @@ import (
 	"gopkg.in/urfave/cli.v2/altsrc"
 
 	"github.com/johnwyles/vrddt-droplets/interfaces/config"
+	"github.com/johnwyles/vrddt-droplets/interfaces/queue"
+	"github.com/johnwyles/vrddt-droplets/interfaces/store"
 	"github.com/johnwyles/vrddt-droplets/pkg/logger"
 )
 
+// Services holds all of various services to the subcommands for use
+type Services struct {
+	Queue queue.Queue
+	Store store.Store
+}
+
+// loggerHandle is the current logger facility
 var loggerHandle logger.Logger
+
+// services will be a refer to our global services avaiable to the subcommands
+var services = &Services{}
 
 // allCommands are all of the commands we are able to run
 func allCommands(cfg *config.Config) []*cli.Command {
@@ -207,6 +219,17 @@ func prepareResources(cfg *config.Config) cli.PrepareFunc {
 	return func(cliContext *cli.Context) (err error) {
 		// Initalize connections
 		loggerHandle = logger.New(os.Stderr, cfg.Log.Level, cfg.Log.Format)
+
+		services.Queue, err = queue.RabbitMQ(&cfg.Queue.RabbitMQ, loggerHandle)
+		if err != nil {
+			return
+		}
+
+		// Setup the store
+		services.Store, err = store.Mongo(&cfg.Store.Mongo, loggerHandle)
+		if err != nil {
+			return
+		}
 
 		return nil
 	}

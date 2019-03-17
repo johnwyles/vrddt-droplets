@@ -25,17 +25,16 @@ type Retriever struct {
 	store Store
 }
 
-// Get finds a vrddt video by its id.
+// GetBYId finds a vrddt video by its id.
 func (ret *Retriever) GetByID(ctx context.Context, id bson.ObjectId) (*domain.VrddtVideo, error) {
 	return ret.store.FindByID(ctx, id)
 }
 
-// Get finds a vrddt video by its md5 hash.
+// GetByMD5 finds a vrddt video by its md5 hash.
 func (ret *Retriever) GetByMD5(ctx context.Context, md5 string) (*domain.VrddtVideo, error) {
 	return ret.store.FindByMD5(ctx, md5)
 }
 
-// TODO
 // Search finds all the vrddt videos matching the parameters in the query.
 func (ret *Retriever) Search(ctx context.Context, limit int) ([]domain.VrddtVideo, error) {
 	vrddtVideos, err := ret.store.FindAll(ctx, limit)

@@ -5,6 +5,8 @@
         ExchangeName   = "vrddt-exchange-converter"
     	QueueName      = "vrddt-queue-converter"
     	URI            = "amqp://admin:password@localhost:5672"
+    [Queue.Memory]
+        MaxSize = 100000
 
 [Store]
     Type = "mongo"
@@ -12,6 +14,8 @@
         RedditVideosCollectionName = "reddit_videos"
     	URI                        = "mongodb://admin:password@localhost:27017/vrddt"
         VrddtVideosCollectionName  = "vrddt_videos"
+    [Store.Memory]
+        MaxSize = 100000
 
 [Log]
     Format  = "text"

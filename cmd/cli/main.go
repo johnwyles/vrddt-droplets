@@ -1,96 +1,155 @@
 package main
 
 import (
+	"fmt"
+	"net/url"
 	"os"
+	"time"
 
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
+	cli "gopkg.in/urfave/cli.v2"
+	"gopkg.in/urfave/cli.v2/altsrc"
 
+	"github.com/johnwyles/vrddt-droplets/interfaces/config"
 	"github.com/johnwyles/vrddt-droplets/pkg/logger"
 )
 
-func main() {
-	cfg := loadConfig()
-	lg := logger.New(os.Stderr, cfg.LogLevel, cfg.LogFormat)
+var loggerHandle logger.Logger
 
-	// cmdProcessWithInternalServices will setup the
-	// "process-with-internal-services" sub-command
-	var cmdProcessWithAPI = &cobra.Command{
-		Use:   "process-with-api",
-		Short: "Use the public API to process a reddit video",
-		Long:  "Use the public API to process a reddit video",
-		Args:  cobra.MinimumNArgs(0),
-		Run: func(cmd *cobra.Command, args []string) {
-			ProcessWithAPI(cfg, lg)
+func allCommands(cfg *config.Config) []*cli.Command {
+	return []*cli.Command{
+		Download(cfg),
+	}
+}
+
+func main() {
+	// Setup some sensible defaults for the vrddt configuration - this is
+	// somewhat ugly but necessary if we want to override configuration file
+	// options with the arguments on the command line
+	cfg := &config.Config{
+		CLI: config.CLIConfig{
+			APIURI:  "http://localhost:8080",
+			Timeout: 20 * time.Second,
+		},
+		Log: config.LogConfig{
+			Format: "text",
+			Level:  "debug",
 		},
 	}
 
-	cmdProcessWithAPI.Flags().StringVarP(
-		&cfg.RedditURL,
-		"api-uri",
-		"a",
-		"",
-		"vrddt API URI",
-	)
-	cmdProcessWithAPI.MarkFlagRequired("api-uri")
-	viper.BindPFlag("VRDDT_API_URI", cmdProcessWithAPI.PersistentFlags().Lookup("api-uri"))
+	// Loading of all the configuration from environment variables, toml
+	// configuration file, or command-line flags
+	flags := []cli.Flag{
+		&cli.StringFlag{
+			EnvVars: []string{"VRDDT_CONFIG"},
+			Name:    "config",
+			Usage:   "vrddt-cli TOML configuration file",
+			Value:   "",
+		},
+		altsrc.NewStringFlag(
+			&cli.StringFlag{
+				Aliases:     []string{"a"},
+				Destination: &cfg.CLI.APIURI,
+				EnvVars:     []string{"VRDDT_CLI_API_URI"},
+				Name:        "CLI.APIURI",
+				Usage:       "vrddt API URI",
+				Value:       cfg.CLI.APIURI,
+			},
+		),
+		altsrc.NewStringFlag(
+			&cli.StringFlag{
+				Aliases:     []string{"lf"},
+				Destination: &cfg.Log.Format,
+				EnvVars:     []string{"VRDDT_LOG_FORMAT"},
+				Name:        "Log.Format",
+				Usage:       "Logging format",
+				Value:       cfg.Log.Format,
+			},
+		),
+		altsrc.NewStringFlag(
+			&cli.StringFlag{
+				Aliases:     []string{"ll"},
+				Destination: &cfg.Log.Level,
+				EnvVars:     []string{"VRDDT_LOG_LEVEL"},
+				Name:        "Log.Level",
+				Usage:       "Set logging level",
+				Value:       cfg.Log.Level,
+			},
+		),
+	}
 
-	cmdProcessWithAPI.Flags().StringVarP(
-		&cfg.RedditURL,
-		"reddit-url",
-		"r",
-		"",
-		"Reddit URL",
-	)
-	cmdProcessWithAPI.MarkFlagRequired("reddit-url")
-	viper.BindPFlag("VRDDT_REDDIT_URL", cmdProcessWithAPI.PersistentFlags().Lookup("reddit-url"))
+	app := &cli.App{
+		Action: rootAction(cfg),
+		After:  afterResources(cfg),
+		Authors: []*cli.Author{
+			{
+				Name:  "John Wyles",
+				Email: "john@johnwyles.com",
+			},
+		},
+		Before: altsrc.InitInputSourceWithContext(
+			flags,
+			func(context *cli.Context) (altsrc.InputSourceContext, error) {
+				if context.IsSet("config") {
+					return altsrc.NewTomlSourceFromFile(context.String("config"))
+				}
 
-	cmdProcessWithAPI.Flags().IntVarP(
-		&cfg.Timeout,
-		"timeout",
-		"t",
-		60,
-		"Timeout (in seconds) before giving up on the operation",
-	)
-	viper.BindPFlag("VRDDT_TIMEOUT", cmdProcessWithAPI.PersistentFlags().Lookup("timeout"))
+				return &altsrc.MapInputSource{}, nil
+			},
+		),
+		Prepare:  prepareResources(cfg),
+		Commands: allCommands(cfg),
+		Flags:    flags,
+		Name:     "vrddt-cli",
+		Usage:    "vrddt CLI tool",
+		Version:  "v0.0.1",
+	}
 
-	cmdProcessWithAPI.Flags().IntVarP(
-		&cfg.PollTime,
-		"poll-time",
-		"p",
-		500,
-		"Poll time frequency (in milliseconds) to poll the API to see if the vrddt video is ready",
-	)
-	viper.BindPFlag("VRDDT_POLL_TIME", cmdProcessWithAPI.PersistentFlags().Lookup("poll-time"))
+	cli.HelpFlag = &cli.BoolFlag{
+		Name:    "help",
+		Aliases: []string{"h"},
+		Usage:   "Print the help",
+	}
 
-	var rootCmd = &cobra.Command{Use: "vrddt-admin"}
-	rootCmd.AddCommand(cmdProcessWithAPI)
-	rootCmd.Execute()
+	cli.VersionFlag = &cli.BoolFlag{
+		Name:    "version",
+		Aliases: []string{"v"},
+		Usage:   "Print the current version",
+	}
+
+	if err := app.Run(os.Args); err != nil {
+		loggerHandle.Fatalf("An error occured running the application", err)
+		os.Exit(1)
+	}
 }
 
-type config struct {
-	LogLevel    string
-	LogFormat   string
-	MongoURI    string
-	PollTime    int
-	RabbitMQURI string
-	RedditURL   string
-	Timeout     int
-	VrddtAPIURI string
+// rootAction is the what we execute if no commands are specified
+func rootAction(cfg *config.Config) cli.ActionFunc {
+	return func(cliContext *cli.Context) (err error) {
+		cli.ShowAppHelp(cliContext)
+		return fmt.Errorf("No sub-command specified")
+	}
 }
 
-func loadConfig() config {
-	viper.SetDefault("VRDDT_LOG_LEVEL", "debug")
-	viper.SetDefault("VRDDT_LOG_FORMAT", "text")
-	viper.SetDefault("VRDDT_API_URI", "http://localhost:8080/api")
+// afterResources will execute after Action() to cleanup
+func afterResources(cfg *config.Config) cli.AfterFunc {
+	return func(cliContext *cli.Context) (err error) {
+		// Cleanup
+		return
+	}
+}
 
-	viper.ReadInConfig()
-	viper.AutomaticEnv()
+// prepareResources will setup some common shared resources amoung all of the
+// commands and make them avaiable to use
+func prepareResources(cfg *config.Config) cli.PrepareFunc {
+	return func(cliContext *cli.Context) (err error) {
+		// Initalize logger
+		loggerHandle = logger.New(os.Stderr, cfg.Log.Level, cfg.Log.Format)
 
-	return config{
-		// application configuration
-		LogLevel:    viper.GetString("VRDDT_LOG_LEVEL"),
-		LogFormat:   viper.GetString("VRDDT_LOG_FORMAT"),
-		VrddtAPIURI: viper.GetString("VRDDT_API_URI"),
+		_, err = url.ParseRequestURI(cfg.CLI.APIURI)
+		if err != nil {
+			loggerHandle.Fatalf("You did not supply a valid vrddt API URI: %s", cfg.CLI.APIURI)
+		}
+
+		return nil
 	}
 }

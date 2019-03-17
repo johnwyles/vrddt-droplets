@@ -206,11 +206,11 @@ func (rvc *redditVideosController) getVrddtVideoByURL(wr http.ResponseWriter, re
 				case errors.TypeResourceNotFound:
 					rvc.Fatalf("Reddit Video found (ID: %s) but vrddt Video (ID: %s) was not", redditVideo.ID.Hex(), redditVideo.VrddtVideoID.Hex())
 				default:
-					rvc.Fatalf("something went wrong: %s", errVrddt)
+					rvc.Fatalf("Something went wrong: %s", errVrddt)
 				}
 			}
 
-			rvc.Infof("reddit video already in db with id '%s' and a vrddt video of: %#v", redditVideo.ID, vrddtVideo)
+			rvc.Infof("Reddit video already in the database with ID '%s' and a vrddt video of: %#v", redditVideo.ID, vrddtVideo)
 			respond(wr, http.StatusOK, vrddtVideo)
 			return
 		}
@@ -219,10 +219,10 @@ func (rvc *redditVideosController) getVrddtVideoByURL(wr http.ResponseWriter, re
 		redditVideo.URL = finalURL
 
 		if err = rvc.cons.Push(context.TODO(), redditVideo); err != nil {
-			rvc.Fatalf("failed to push reddit video to queue: %s", err)
+			rvc.Fatalf("Failed to push Reddit video to queue: %s", err)
 		}
 
-		rvc.Infof("unique reddit video URL queued with URL of: %s", redditVideo.URL)
+		rvc.Infof("Unique Reddit video URL queued with URL of: %s", redditVideo.URL)
 
 		var pollTime int
 		pollTime = 500
@@ -252,7 +252,7 @@ func (rvc *redditVideosController) getVrddtVideoByURL(wr http.ResponseWriter, re
 		for {
 			select {
 			case <-timeout:
-				rvc.Fatalf("operation timed out at after '%d' seconds.", timeout)
+				rvc.Fatalf("Operation timed out at after '%d' seconds.", timeout)
 			case <-tick:
 				// If the Reddit URL is not found in the database yet keep checking
 				temporaryRedditVideo, err := rvc.ret.GetByURL(context.TODO(), redditVideo.URL)
@@ -260,12 +260,12 @@ func (rvc *redditVideosController) getVrddtVideoByURL(wr http.ResponseWriter, re
 					switch errors.Type(err) {
 					default:
 					case errors.TypeUnknown:
-						rvc.Fatalf("something went wrong: %s", err)
+						rvc.Fatalf("Something went wrong: %s", err)
 					case errors.TypeResourceNotFound:
 						continue
 					}
 				}
-				rvc.Debugf("reddit video now exists in db with a vrddt video ID: reddit video: %#v | vrddt video ID: %s", temporaryRedditVideo, temporaryRedditVideo.VrddtVideoID.Hex())
+				rvc.Debugf("Reddit video now exists in db with a vrddt video ID: reddit video: %#v | vrddt video ID: %s", temporaryRedditVideo, temporaryRedditVideo.VrddtVideoID.Hex())
 
 				vrddtVideo, errVrddt := rvc.ret.GetVrddtVideoByID(context.TODO(), temporaryRedditVideo.VrddtVideoID)
 				if errVrddt != nil {
@@ -273,11 +273,11 @@ func (rvc *redditVideosController) getVrddtVideoByURL(wr http.ResponseWriter, re
 					case errors.TypeResourceNotFound:
 						rvc.Fatalf("Reddit video found (ID: %s) but associated vrddt video (ID: %s) was not", temporaryRedditVideo.ID.Hex(), temporaryRedditVideo.VrddtVideoID.Hex())
 					default:
-						rvc.Fatalf("something went wrong: %s", errVrddt)
+						rvc.Fatalf("Something went wrong: %s", errVrddt)
 					}
 				}
 
-				rvc.Infof("unique url created new vrddt video: %#v", vrddtVideo)
+				rvc.Infof("Unique url created new vrddt video: %#v", vrddtVideo)
 				respond(wr, http.StatusOK, vrddtVideo)
 				return
 			}

@@ -10,8 +10,8 @@ import (
 
 	"github.com/johnwyles/vrddt-droplets/domain"
 	"github.com/johnwyles/vrddt-droplets/interfaces/config"
-	"github.com/johnwyles/vrddt-droplets/interfaces/mongo"
-	"github.com/johnwyles/vrddt-droplets/interfaces/rabbitmq"
+	"github.com/johnwyles/vrddt-droplets/interfaces/queue"
+	"github.com/johnwyles/vrddt-droplets/interfaces/store"
 	"github.com/johnwyles/vrddt-droplets/usecases/redditvideos"
 	"github.com/johnwyles/vrddt-droplets/usecases/vrddtvideos"
 )
@@ -102,12 +102,12 @@ func processWithInternalServices(cliContext *cli.Context) (err error) {
 	}
 
 	// Initialize the queue
-	q, closeRabbitMQSession, err := rabbitmq.Connect(cliContext.String("Queue.RabbitMQ.URI"))
+	q, closeRabbitMQSession, err := queue.RabbitMQ(cliContext.String("Queue.RabbitMQ.URI"))
 	if err != nil {
 		loggerHandle.Fatalf("failed to connect to rabbitmq: %v", err)
 	}
 	defer closeRabbitMQSession()
-	redditVideoWorkQueue := rabbitmq.NewRedditVideoWorkQueue(q)
+	redditVideoWorkQueue := queue.RabbitMQ(q)
 
 	// // Initialze the store
 	db, closeMongoSession, err := mongo.Connect(cliContext.String("Store.Mongo.URI"), true)
