@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/johnwyles/vrddt-droplets/interfaces/config"
-	"github.com/johnwyles/vrddt-droplets/interfaces/mongo"
-	"github.com/johnwyles/vrddt-droplets/interfaces/rabbitmq"
+	"github.com/johnwyles/vrddt-droplets/interfaces/queue"
+	"github.com/johnwyles/vrddt-droplets/interfaces/store"
 	"github.com/johnwyles/vrddt-droplets/pkg/logger"
 	"github.com/johnwyles/vrddt-droplets/usecases/redditvideos"
 	"github.com/johnwyles/vrddt-droplets/usecases/vrddtvideos"

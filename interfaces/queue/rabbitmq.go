@@ -1,6 +1,7 @@
 package queue
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -49,7 +50,7 @@ func RabbitMQ(cfg *config.QueueRabbitMQConfig, loggerHandle logger.Logger) (queu
 }
 
 // Cleanup will close the channel and connection
-func (r *rabbitmqConnection) Cleanup() (err error) {
+func (r *rabbitmqConnection) Cleanup(ctx context.Context) (err error) {
 	if r.connection == nil || r.channel == nil {
 		return fmt.Errorf("channel and connection have not be initialized")
 	}
@@ -68,7 +69,7 @@ func (r *rabbitmqConnection) Cleanup() (err error) {
 	return
 }
 
-func (r *rabbitmqConnection) Init() (err error) {
+func (r *rabbitmqConnection) Init(ctx context.Context) (err error) {
 	r.connection, err = amqp.Dial(r.uri)
 	if err != nil {
 		return
@@ -97,7 +98,7 @@ func (r *rabbitmqConnection) Init() (err error) {
 		nil,            // arguments
 	); err != nil {
 		r.log.Errorf("Error declaring exchange %s: %s", r.exchangeName, err)
-		return r.Cleanup()
+		return r.Cleanup(ctx)
 	}
 	r.log.Infof("Exchanged declared: %s", r.exchangeName)
 
@@ -111,7 +112,7 @@ func (r *rabbitmqConnection) Init() (err error) {
 	)
 	if err != nil {
 		r.log.Errorf("Error declaring queue %s: %s", r.queueName, err)
-		return r.Cleanup()
+		return r.Cleanup(ctx)
 	}
 	r.log.Infof("Queue declared: %s", r.queueName)
 
@@ -124,7 +125,7 @@ func (r *rabbitmqConnection) Init() (err error) {
 	)
 	if err != nil {
 		r.log.Errorf("Error binding queue '%s' to exchange '%s' using binding key name '%s': %s", r.queueName, r.exchangeName, r.bindingKeyName, err)
-		return r.Cleanup()
+		return r.Cleanup(ctx)
 	}
 	r.log.Infof("Queue '%s' bound to exchange '%s' using binding key name '%s'", r.queueName, r.exchangeName, r.bindingKeyName)
 
@@ -133,14 +134,14 @@ func (r *rabbitmqConnection) Init() (err error) {
 
 // MakeClient is implemented but does nothing as there is no additional steps
 // required by RabbitMQ to make the connection a client vs a consumer
-func (r *rabbitmqConnection) MakeClient() (err error) {
+func (r *rabbitmqConnection) MakeClient(ctx context.Context) (err error) {
 	r.connectionType = Client
 	return
 }
 
 // MakeConsumer will setup whatever is necessary to pop messages and
 // will set the Delivery channel
-func (r *rabbitmqConnection) MakeConsumer() (err error) {
+func (r *rabbitmqConnection) MakeConsumer(ctx context.Context) (err error) {
 	// Setup a new AMQP consumer UUID
 	uuid, err := uuid.NewRandom()
 	if err != nil {
@@ -174,7 +175,7 @@ func (r *rabbitmqConnection) MakeConsumer() (err error) {
 }
 
 // Pop will pull off a Reddit video struct from the queue
-func (r *rabbitmqConnection) Pop() (msg interface{}, err error) {
+func (r *rabbitmqConnection) Pop(ctx context.Context) (msg interface{}, err error) {
 	if r.connectionType != Consumer {
 		return nil, fmt.Errorf("Connection type must be '%s' but it is '%s' instead", Consumer, r.connectionType)
 	}
@@ -188,7 +189,7 @@ func (r *rabbitmqConnection) Pop() (msg interface{}, err error) {
 }
 
 // Push will put a Reddit video struct onto the queue
-func (r *rabbitmqConnection) Push(msg interface{}) (err error) {
+func (r *rabbitmqConnection) Push(ctx context.Context, msg interface{}) (err error) {
 	if r.connectionType != Client {
 		return fmt.Errorf("Connection type must be '%s' but it is '%s' instead", Client, r.connectionType)
 	}

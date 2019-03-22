@@ -59,23 +59,7 @@ func insertJSONToQueue(cliContext *cli.Context) (err error) {
 		return
 	}
 
-	// Initialize the queue
-	q, closeRabbitMQSession, err := rabbitmq.Connect(cliContext.String("Queue.RabbitMQ.URI"))
-	if err != nil {
-		loggerHandle.Fatalf("failed to connect to rabbitmq: %v", err)
-	}
-	defer closeRabbitMQSession()
-	redditVideoWorkQueue := rabbitmq.NewRedditVideoWorkQueue(q)
-
-	// // Initialze the store
-	db, closeMongoSession, err := mongo.Connect(cliContext.String("Store.Mongo.URI"), true)
-	if err != nil {
-		loggerHandle.Fatalf("failed to connect to mongodb: %v", err)
-	}
-	defer closeMongoSession()
-	redditVideoStore := mongo.NewRedditVideoStore(db)
-
-	redditVideoConstructor := redditvideos.NewConstructor(loggerHandle, redditVideoWorkQueue, redditVideoStore)
+	redditVideoConstructor := redditvideos.NewConstructor(loggerHandle, services.Queue, services.Store)
 
 	// NOTE: This does NOT check the DB at all before inserting the video into
 	// the Queue so we can test if the API and Web tiers are doing their job as

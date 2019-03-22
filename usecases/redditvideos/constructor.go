@@ -4,12 +4,14 @@ import (
 	"context"
 
 	"github.com/johnwyles/vrddt-droplets/domain"
+	"github.com/johnwyles/vrddt-droplets/interfaces/queue"
+	"github.com/johnwyles/vrddt-droplets/interfaces/store"
 	"github.com/johnwyles/vrddt-droplets/pkg/errors"
 	"github.com/johnwyles/vrddt-droplets/pkg/logger"
 )
 
 // NewConstructor initializes a Creation service object.
-func NewConstructor(lg logger.Logger, queue Queue, store Store) *Constructor {
+func NewConstructor(lg logger.Logger, queue queue.Queue, store store.Store) *Constructor {
 	return &Constructor{
 		Logger: lg,
 		queue:  queue,
@@ -21,32 +23,31 @@ func NewConstructor(lg logger.Logger, queue Queue, store Store) *Constructor {
 type Constructor struct {
 	logger.Logger
 
-	queue Queue
-	store Store
+	queue queue.Queue
+	store store.Store
 }
 
 // Create creates a new reddit video in the system using the supplied
 // RedditVideo object
-func (cons *Constructor) Create(ctx context.Context, redditVideo *domain.RedditVideo) (*domain.RedditVideo, error) {
+func (cons *Constructor) Create(ctx context.Context, redditVideo *domain.RedditVideo) (err error) {
 	if err := redditVideo.Validate(); err != nil {
-		return nil, err
+		return err
 	}
 
 	if err := redditVideo.SetFinalURL(); err != nil {
-		return nil, err
+		return err
 	}
 
-	if cons.store.Exists(ctx, redditVideo.ID) {
-		return nil, errors.Conflict("ID", redditVideo.ID.Hex())
-	}
-
-	saved, err := cons.store.Save(ctx, redditVideo)
+	redditVideo, err = cons.store.GetRedditVideo(
+		ctx, store.Selector{
+			"_id": redditVideo.ID,
+		},
+	)
 	if err != nil {
-		cons.Logger.Warnf("failed to save user object: %v", err)
-		return nil, err
+		return errors.Conflict("ID", redditVideo.ID.Hex())
 	}
 
-	return saved, nil
+	return cons.store.CreateRedditVideo(ctx, redditVideo)
 }
 
 // Push pops a reddit video from the queue.

@@ -1,6 +1,7 @@
 package store
 
 import (
+	"context"
 	"fmt"
 
 	mgo "gopkg.in/mgo.v2"
@@ -43,7 +44,7 @@ func Mongo(cfg *config.StoreMongoConfig, loggerHandle logger.Logger) (store Stor
 }
 
 // Cleanup will end the session
-func (m *mongoSession) Cleanup() (err error) {
+func (m *mongoSession) Cleanup(ctx context.Context) (err error) {
 	m.log.Debugf("Cleanup()")
 
 	if m.session == nil {
@@ -56,7 +57,7 @@ func (m *mongoSession) Cleanup() (err error) {
 }
 
 // CreateRedditVideo will add a RedditVideo to the Reddit videos collection
-func (m *mongoSession) CreateRedditVideo(redditVideo *domain.RedditVideo) (err error) {
+func (m *mongoSession) CreateRedditVideo(ctx context.Context, redditVideo *domain.RedditVideo) (err error) {
 	redditVideosCollection, err := m.redditVideosCollection()
 	if err != nil {
 		return
@@ -66,7 +67,7 @@ func (m *mongoSession) CreateRedditVideo(redditVideo *domain.RedditVideo) (err e
 }
 
 // CreateVrddtVideo will add a vrddt video to the vrddt videos collection
-func (m *mongoSession) CreateVrddtVideo(vrddtVideo *domain.VrddtVideo) (err error) {
+func (m *mongoSession) CreateVrddtVideo(ctx context.Context, vrddtVideo *domain.VrddtVideo) (err error) {
 	vrddtVideosCollection, err := m.vrddtVideosCollection()
 	if err != nil {
 		return
@@ -77,12 +78,12 @@ func (m *mongoSession) CreateVrddtVideo(vrddtVideo *domain.VrddtVideo) (err erro
 
 // DeleteRedditVideos is an alias to the same function but plural becaause the
 // number of videos deleted is determined by the selector
-func (m *mongoSession) DeleteRedditVideo(selector Selector) (err error) {
-	return m.DeleteRedditVideos(selector)
+func (m *mongoSession) DeleteRedditVideo(ctx context.Context, selector Selector) (err error) {
+	return m.DeleteRedditVideos(ctx, selector)
 }
 
 // DeleteRedditVideos deletes Reddit video from the collection
-func (m *mongoSession) DeleteRedditVideos(selector Selector) (err error) {
+func (m *mongoSession) DeleteRedditVideos(ctx context.Context, selector Selector) (err error) {
 	redditVideos, err := m.redditVideosCollection()
 	if err != nil {
 		return err
@@ -97,12 +98,12 @@ func (m *mongoSession) DeleteRedditVideos(selector Selector) (err error) {
 
 // DeleteVrddtVideo is an alias to the same function but plural becaause the
 // number of videos deleted is determined by the selector
-func (m *mongoSession) DeleteVrddtVideo(selector Selector) (err error) {
-	return m.DeleteVrddtVideos(selector)
+func (m *mongoSession) DeleteVrddtVideo(ctx context.Context, selector Selector) (err error) {
+	return m.DeleteVrddtVideos(ctx, selector)
 }
 
 // DeleteVrddtVideo deletes vrddtVideos from the collection
-func (m *mongoSession) DeleteVrddtVideos(selector Selector) (err error) {
+func (m *mongoSession) DeleteVrddtVideos(ctx context.Context, selector Selector) (err error) {
 	vrddtVideosCollection, err := m.vrddtVideosCollection()
 	if err != nil {
 		return err
@@ -117,7 +118,7 @@ func (m *mongoSession) DeleteVrddtVideos(selector Selector) (err error) {
 
 // GetRedditVideo will return a Reddit video from the database if the passed in
 // key / value pair are found
-func (m *mongoSession) GetRedditVideo(selector Selector) (redditVideo *domain.RedditVideo, err error) {
+func (m *mongoSession) GetRedditVideo(ctx context.Context, selector Selector) (redditVideo *domain.RedditVideo, err error) {
 	redditVideosCollection, err := m.redditVideosCollection()
 	if err != nil {
 		return
@@ -131,14 +132,14 @@ func (m *mongoSession) GetRedditVideo(selector Selector) (redditVideo *domain.Re
 
 // GetRedditVideos will return a collection of Reddit videos from the database
 // with a LIMIT of 100 items that match the selector
-func (m *mongoSession) GetRedditVideos(selector Selector) (redditVideos []*domain.RedditVideo, err error) {
+func (m *mongoSession) GetRedditVideos(ctx context.Context, selector Selector, limit int) (redditVideos []*domain.RedditVideo, err error) {
 	redditVideosCollection, err := m.redditVideosCollection()
 	if err != nil {
 		return
 	}
 
 	redditVideos = []*domain.RedditVideo{}
-	iter := redditVideosCollection.Find(selector).Limit(100).Iter()
+	iter := redditVideosCollection.Find(selector).Limit(limit).Iter()
 	err = iter.All(&redditVideos)
 
 	return
@@ -146,7 +147,7 @@ func (m *mongoSession) GetRedditVideos(selector Selector) (redditVideos []*domai
 
 // GetVrddtVideo will return a VrddtVideo from the database if the passed
 // in selector is found
-func (m *mongoSession) GetVrddtVideo(selector Selector) (vrddtVideo *domain.VrddtVideo, err error) {
+func (m *mongoSession) GetVrddtVideo(ctx context.Context, selector Selector) (vrddtVideo *domain.VrddtVideo, err error) {
 	vrddtVideosCollection, err := m.vrddtVideosCollection()
 	if err != nil {
 		return
@@ -160,21 +161,21 @@ func (m *mongoSession) GetVrddtVideo(selector Selector) (vrddtVideo *domain.Vrdd
 
 // GetVrddtVideos will return a VrddtVideo from the database if the passed
 // in key / value pair are found
-func (m *mongoSession) GetVrddtVideos(selector Selector) (vrddtVideos []*domain.VrddtVideo, err error) {
+func (m *mongoSession) GetVrddtVideos(ctx context.Context, selector Selector, limit int) (vrddtVideos []*domain.VrddtVideo, err error) {
 	vrddtVideosCollection, err := m.vrddtVideosCollection()
 	if err != nil {
 		return
 	}
 
 	vrddtVideos = []*domain.VrddtVideo{}
-	iter := vrddtVideosCollection.Find(selector).Limit(100).Iter()
+	iter := vrddtVideosCollection.Find(selector).Limit(limit).Iter()
 	err = iter.All(&vrddtVideos)
 
 	return
 }
 
 // Init starts the session to the database
-func (m *mongoSession) Init() (err error) {
+func (m *mongoSession) Init(ctx context.Context) (err error) {
 	dialInfo, err := mgo.ParseURL(m.uri)
 	if err != nil {
 		return

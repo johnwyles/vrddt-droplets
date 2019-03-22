@@ -1,6 +1,7 @@
 package queue
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/johnwyles/vrddt-droplets/interfaces/config"
@@ -26,27 +27,27 @@ func Memory(cfg *config.QueueMemoryConfig, loggerHandle logger.Logger) (queue Qu
 	return
 }
 
-func (m *memory) Cleanup() (err error) {
+func (m *memory) Cleanup(ctx context.Context) (err error) {
 	close(m.queue)
 	return
 }
 
-func (m *memory) Init() (err error) {
+func (m *memory) Init(ctx context.Context) (err error) {
 	m.queue = make(chan interface{}, m.maxSize)
 	return
 }
 
-func (m *memory) MakeClient() (err error) {
+func (m *memory) MakeClient(ctx context.Context) (err error) {
 	m.connectionType = Client
 	return
 }
 
-func (m *memory) MakeConsumer() (err error) {
+func (m *memory) MakeConsumer(ctx context.Context) (err error) {
 	m.connectionType = Consumer
 	return
 }
 
-func (m *memory) Push(msg interface{}) (err error) {
+func (m *memory) Push(ctx context.Context, msg interface{}) (err error) {
 	if m.connectionType != Client {
 		return fmt.Errorf("connection type must be '%s' but is is '%s' instead", Client, m.connectionType)
 	}
@@ -59,7 +60,7 @@ func (m *memory) Push(msg interface{}) (err error) {
 	}
 }
 
-func (m *memory) Pop() (msg interface{}, err error) {
+func (m *memory) Pop(ctx context.Context) (msg interface{}, err error) {
 	if m.connectionType != Consumer {
 		return nil, fmt.Errorf("connection type must be '%s' but it is '%s' instead", Consumer, m.connectionType)
 	}

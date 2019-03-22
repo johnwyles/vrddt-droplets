@@ -6,11 +6,12 @@ import (
 	"gopkg.in/mgo.v2/bson"
 
 	"github.com/johnwyles/vrddt-droplets/domain"
+	"github.com/johnwyles/vrddt-droplets/interfaces/store"
 	"github.com/johnwyles/vrddt-droplets/pkg/logger"
 )
 
 // NewRetriever initializes the retrieval usecase with given store.
-func NewRetriever(lg logger.Logger, store Store) *Retriever {
+func NewRetriever(lg logger.Logger, store store.Store) *Retriever {
 	return &Retriever{
 		Logger: lg,
 
@@ -22,22 +23,36 @@ func NewRetriever(lg logger.Logger, store Store) *Retriever {
 type Retriever struct {
 	logger.Logger
 
-	store Store
+	store store.Store
 }
 
-// GetBYId finds a vrddt video by its id.
+// GetByID finds a vrddt video by its id.
 func (ret *Retriever) GetByID(ctx context.Context, id bson.ObjectId) (*domain.VrddtVideo, error) {
-	return ret.store.FindByID(ctx, id)
+	return ret.store.GetVrddtVideo(
+		ctx,
+		store.Selector{
+			"_id": id,
+		},
+	)
 }
 
 // GetByMD5 finds a vrddt video by its md5 hash.
 func (ret *Retriever) GetByMD5(ctx context.Context, md5 string) (*domain.VrddtVideo, error) {
-	return ret.store.FindByMD5(ctx, md5)
+	return ret.store.GetVrddtVideo(
+		ctx,
+		store.Selector{
+			"md5": md5,
+		},
+	)
 }
 
 // Search finds all the vrddt videos matching the parameters in the query.
-func (ret *Retriever) Search(ctx context.Context, limit int) ([]domain.VrddtVideo, error) {
-	vrddtVideos, err := ret.store.FindAll(ctx, limit)
+func (ret *Retriever) Search(ctx context.Context, selector store.Selector, limit int) ([]*domain.VrddtVideo, error) {
+	vrddtVideos, err := ret.store.GetVrddtVideos(
+		ctx,
+		selector,
+		limit,
+	)
 	if err != nil {
 		return nil, err
 	}

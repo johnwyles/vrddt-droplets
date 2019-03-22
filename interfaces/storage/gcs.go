@@ -41,7 +41,7 @@ func GCS(cfg *config.StorageGCSConfig, loggerHandle logger.Logger) (stg Storage,
 }
 
 // Attributes returns attributes about a file
-func (g *gcs) Attributes(remotePath string) (attributes interface{}, err error) {
+func (g *gcs) Attributes(ctx context.Context, remotePath string) (attributes interface{}, err error) {
 	file := g.bucket.Object(remotePath)
 	attributes, err = file.Attrs(g.context)
 	if err != nil {
@@ -52,7 +52,7 @@ func (g *gcs) Attributes(remotePath string) (attributes interface{}, err error) 
 }
 
 // Cleanup closes the GCS connection
-func (g *gcs) Cleanup() (err error) {
+func (g *gcs) Cleanup(ctx context.Context) (err error) {
 	if g.client == nil {
 		return fmt.Errorf("A client has not been set in order to be cleaned up")
 	}
@@ -61,7 +61,7 @@ func (g *gcs) Cleanup() (err error) {
 }
 
 // Delete will remove a file
-func (g *gcs) Delete(remotePath string) (err error) {
+func (g *gcs) Delete(ctx context.Context, remotePath string) (err error) {
 	if err = g.bucket.Object(remotePath).Delete(g.context); err != nil {
 		return err
 	}
@@ -70,7 +70,7 @@ func (g *gcs) Delete(remotePath string) (err error) {
 }
 
 // GetLocation returns the URL to a file
-func (g *gcs) GetLocation(remotePath string) (url string, err error) {
+func (g *gcs) GetLocation(ctx context.Context, remotePath string) (url string, err error) {
 	attributes, err := g.bucket.Object(remotePath).Attrs(g.context)
 	if err != nil {
 		return
@@ -82,7 +82,7 @@ func (g *gcs) GetLocation(remotePath string) (url string, err error) {
 }
 
 // Init establishes the connection
-func (g *gcs) Init() (err error) {
+func (g *gcs) Init(ctx context.Context) (err error) {
 	g.context = context.Background()
 
 	gcsClient, err := storage.NewClient(g.context, option.WithCredentialsFile(g.credentialsJSON))
@@ -97,7 +97,7 @@ func (g *gcs) Init() (err error) {
 }
 
 // List returns all files at a given path
-func (g *gcs) List(remotePath string) (files []interface{}, err error) {
+func (g *gcs) List(ctx context.Context, remotePath string) (files []interface{}, err error) {
 	iter := g.bucket.Objects(g.context, nil)
 	for {
 		attributes, err := iter.Next()
@@ -115,7 +115,7 @@ func (g *gcs) List(remotePath string) (files []interface{}, err error) {
 }
 
 // Download will download a remote path to the provided local path
-func (g *gcs) Download(remotePath string, localPath string) (err error) {
+func (g *gcs) Download(ctx context.Context, remotePath string, localPath string) (err error) {
 	fileReader, err := g.bucket.Object(remotePath).NewReader(g.context)
 	if err != nil {
 		return
@@ -142,7 +142,7 @@ func (g *gcs) Download(remotePath string, localPath string) (err error) {
 }
 
 // Upload will upload a local path to the provided remote path
-func (g *gcs) Upload(localPath string, remotePath string) (err error) {
+func (g *gcs) Upload(ctx context.Context, localPath string, remotePath string) (err error) {
 	gcsObject := g.bucket.Object(remotePath)
 	gcsWriter := gcsObject.NewWriter(g.context)
 

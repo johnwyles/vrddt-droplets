@@ -1,6 +1,7 @@
 package converter
 
 import (
+	"context"
 	"os"
 	"os/exec"
 	"strings"
@@ -33,7 +34,7 @@ func FFmpeg(cfg *config.ConverterFFmpegConfig, loggerHandle logger.Logger) (conv
 }
 
 // ConvertFiles is the method to convert the files
-func (f *ffmpeg) Convert(inputVideoPath string, inputAudioPath string, outputVideoPath string) (err error) {
+func (f *ffmpeg) Convert(ctx context.Context, inputVideoPath string, inputAudioPath string, outputVideoPath string) (err error) {
 	ffmpegArguments := []string{
 		"-y",
 		"-i", inputVideoPath,

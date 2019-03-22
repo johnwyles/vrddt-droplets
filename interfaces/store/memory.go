@@ -1,6 +1,8 @@
 package store
 
 import (
+	"context"
+
 	"github.com/johnwyles/vrddt-droplets/domain"
 	"github.com/johnwyles/vrddt-droplets/interfaces/config"
 	"github.com/johnwyles/vrddt-droplets/pkg/logger"
@@ -29,7 +31,7 @@ func Memory(cfg *config.StoreMemoryConfig, loggerHandle logger.Logger) (store St
 }
 
 // Cleanup will end the session
-func (m *memoryStore) Cleanup() (err error) {
+func (m *memoryStore) Cleanup(ctx context.Context) (err error) {
 	m = &memoryStore{
 		log:          m.log,
 		redditVideos: []*domain.RedditVideo{},
@@ -40,46 +42,46 @@ func (m *memoryStore) Cleanup() (err error) {
 }
 
 // CreateRedditVideo will add a RedditVideo to the Reddit videos
-func (m *memoryStore) CreateRedditVideo(redditVideo *domain.RedditVideo) (err error) {
+func (m *memoryStore) CreateRedditVideo(ctx context.Context, redditVideo *domain.RedditVideo) (err error) {
 	m.redditVideos = append(m.redditVideos, redditVideo)
 	return
 }
 
 // CreateVrddtVideo will add a vrddt video to the vrddt videos
-func (m *memoryStore) CreateVrddtVideo(vrddtVideo *domain.VrddtVideo) (err error) {
+func (m *memoryStore) CreateVrddtVideo(ctx context.Context, vrddtVideo *domain.VrddtVideo) (err error) {
 	m.vrddtVideos = append(m.vrddtVideos, vrddtVideo)
 	return
 }
 
 // DeleteRedditVideo is an alias to the same function but plural becaause the
 // number of videos deleted is determined by the selector
-func (m *memoryStore) DeleteRedditVideo(selector Selector) (err error) {
-	return m.DeleteRedditVideos(selector)
+func (m *memoryStore) DeleteRedditVideo(ctx context.Context, selector Selector) (err error) {
+	return m.DeleteRedditVideos(ctx, selector)
 }
 
 // DeleteRedditVideos deletes Reddit video from the collection
-func (m *memoryStore) DeleteRedditVideos(selector Selector) (err error) {
+func (m *memoryStore) DeleteRedditVideos(ctx context.Context, selector Selector) (err error) {
 	return
 }
 
 // DeleteVrddtVideo is an alias to the same function but plural becaause the
 // number of videos deleted is determined by the selector
-func (m *memoryStore) DeleteVrddtVideo(selector Selector) (err error) {
-	return m.DeleteVrddtVideos(selector)
+func (m *memoryStore) DeleteVrddtVideo(ctx context.Context, selector Selector) (err error) {
+	return m.DeleteVrddtVideos(ctx, selector)
 }
 
 // DeleteVrddtVideo deletes vrddtVideos from the collection
-func (m *memoryStore) DeleteVrddtVideos(selector Selector) (err error) {
+func (m *memoryStore) DeleteVrddtVideos(ctx context.Context, selector Selector) (err error) {
 	return
 }
 
 // GetRedditVideo will return a RedditVideo from the database if the passed in
 // key / value pair are found
-func (m *memoryStore) GetRedditVideo(selector Selector) (redditVideo *domain.RedditVideo, err error) {
+func (m *memoryStore) GetRedditVideo(ctx context.Context, selector Selector) (redditVideo *domain.RedditVideo, err error) {
 	return
 }
 
-func (m *memoryStore) GetRedditVideos(selector Selector) (redditVideos []*domain.RedditVideo, err error) {
+func (m *memoryStore) GetRedditVideos(ctx context.Context, selector Selector, limit int) (redditVideos []*domain.RedditVideo, err error) {
 	// selector := map[string]interface{}{
 	// 	"audio_url": redditVideo.AudioURL,
 	// 	"video_url": redditVideo.VideoURL,
@@ -109,17 +111,17 @@ func (m *memoryStore) GetRedditVideos(selector Selector) (redditVideos []*domain
 
 // GetVrddtVideo will return a VrddtVideo from the database if the passed
 // in selector is found
-func (m *memoryStore) GetVrddtVideo(selector Selector) (vrddtVideo *domain.VrddtVideo, err error) {
+func (m *memoryStore) GetVrddtVideo(ctx context.Context, selector Selector) (vrddtVideo *domain.VrddtVideo, err error) {
 	return
 }
 
 // GetVrddtVideos will return a VrddtVideo from the database if the passed
 // in key / value pair are found
-func (m *memoryStore) GetVrddtVideos(selector Selector) (vrddtVideos []*domain.VrddtVideo, err error) {
+func (m *memoryStore) GetVrddtVideos(ctx context.Context, selector Selector, limit int) (vrddtVideos []*domain.VrddtVideo, err error) {
 	return
 }
 
 // Init provides some initialization for the store
-func (m *memoryStore) Init() (err error) {
+func (m *memoryStore) Init(ctx context.Context) (err error) {
 	return
 }
