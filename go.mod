@@ -13,7 +13,9 @@ require (
 	github.com/sirupsen/logrus v1.4.0
 	github.com/streadway/amqp v0.0.0-20190312002841-61ee40d2027b
 	github.com/stretchr/testify v1.3.0 // indirect
-	golang.org/x/sys v0.0.0-20190312061237-fead79001313 // indirect
+	golang.org/x/crypto v0.0.0-20190325154230-a5d413f7728c // indirect
+	golang.org/x/net v0.0.0-20190328230028-74de082e2cca // indirect
+	golang.org/x/sys v0.0.0-20190329044733-9eb1bfa1ce65 // indirect
 	google.golang.org/api v0.2.0
 	gopkg.in/mgo.v2 v2.0.0-20180705113604-9856a29383ce
 	gopkg.in/urfave/cli.v2 v2.0.0-20180128182452-d3ae77c26ac8

@@ -145,7 +145,7 @@ func main() {
 			&cli.StringFlag{
 				Destination: &cfg.Store.Mongo.VrddtVideosCollectionName,
 				EnvVars:     []string{"VRDDT_STORE_MONGO_VRDDT_VIDEOS_COLLECTION_NAME"},
-				Name:        "Store.Mongo.ReddtiVideosCollectionName",
+				Name:        "Store.Mongo.VrddtVideosCollectionName",
 				Usage:       "Collection name where we will store information about the vrddt videos",
 				Value:       cfg.Store.Mongo.VrddtVideosCollectionName,
 			},
@@ -192,7 +192,7 @@ func main() {
 	}
 
 	if err := app.Run(os.Args); err != nil {
-		loggerHandle.Fatalf("An error occured running the application", err)
+		loggerHandle.Fatalf("An error occured running the application: %s", err)
 		os.Exit(1)
 	}
 }
