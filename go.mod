@@ -2,7 +2,7 @@ module github.com/johnwyles/vrddt-droplets
 
 go 1.12
 
-replace gopkg.in/urfave/cli.v2 v2.0.0-20180128182452-d3ae77c26ac8 => github.com/johnwyles/cli v1.16.1-0.20190208003449-3a4ded93cc73
+replace gopkg.in/urfave/cli.v2 v2.0.0-20180128182452-d3ae77c26ac8 => github.com/johnwyles/cli v0.0.0-0.20190208003449-3a4ded93cc73
 
 require (
 	cloud.google.com/go v0.37.0

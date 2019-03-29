@@ -136,7 +136,7 @@ gopkg.in/mgo.v2/bson
 gopkg.in/mgo.v2/internal/sasl
 gopkg.in/mgo.v2/internal/scram
 gopkg.in/mgo.v2/internal/json
-# gopkg.in/urfave/cli.v2 v2.0.0-20180128182452-d3ae77c26ac8 => github.com/johnwyles/cli v1.16.1-0.20190208003449-3a4ded93cc73
+# gopkg.in/urfave/cli.v2 v2.0.0-20180128182452-d3ae77c26ac8 => github.com/johnwyles/cli v0.0.0-0.20190208003449-3a4ded93cc73
 gopkg.in/urfave/cli.v2
 gopkg.in/urfave/cli.v2/altsrc
 # gopkg.in/yaml.v2 v2.2.2
