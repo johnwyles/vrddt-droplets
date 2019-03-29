@@ -10,8 +10,6 @@ import (
 
 	"github.com/johnwyles/vrddt-droplets/domain"
 	"github.com/johnwyles/vrddt-droplets/interfaces/config"
-	"github.com/johnwyles/vrddt-droplets/interfaces/queue"
-	"github.com/johnwyles/vrddt-droplets/interfaces/store"
 	"github.com/johnwyles/vrddt-droplets/usecases/redditvideos"
 	"github.com/johnwyles/vrddt-droplets/usecases/vrddtvideos"
 )
@@ -101,26 +99,9 @@ func processWithInternalServices(cliContext *cli.Context) (err error) {
 		return
 	}
 
-	// Initialize the queue
-	q, closeRabbitMQSession, err := queue.RabbitMQ(cliContext.String("Queue.RabbitMQ.URI"))
-	if err != nil {
-		loggerHandle.Fatalf("failed to connect to rabbitmq: %v", err)
-	}
-	defer closeRabbitMQSession()
-	redditVideoWorkQueue := queue.RabbitMQ(q)
-
-	// // Initialze the store
-	db, closeMongoSession, err := mongo.Connect(cliContext.String("Store.Mongo.URI"), true)
-	if err != nil {
-		loggerHandle.Fatalf("failed to connect to mongodb: %v", err)
-	}
-	defer closeMongoSession()
-	redditVideoStore := mongo.NewRedditVideoStore(db)
-	vrddtVideoStore := mongo.NewVrddtVideoStore(db)
-
-	redditVideoConstructor := redditvideos.NewConstructor(loggerHandle, redditVideoWorkQueue, redditVideoStore)
-	redditVideoRetriever := redditvideos.NewRetriever(loggerHandle, redditVideoStore, vrddtVideoStore)
-	vrddtVideoRetriever := vrddtvideos.NewRetriever(loggerHandle, vrddtVideoStore)
+	redditVideoConstructor := redditvideos.NewConstructor(loggerHandle, services.Queue, services.Store)
+	redditVideoRetriever := redditvideos.NewRetriever(loggerHandle, services.Store)
+	vrddtVideoRetriever := vrddtvideos.NewRetriever(loggerHandle, services.Store)
 
 	// Check if this already exists in the database
 	dbRedditVideo, err := redditVideoRetriever.GetByURL(context.TODO(), redditVideo.URL)

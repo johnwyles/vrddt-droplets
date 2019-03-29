@@ -2,56 +2,61 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"time"
 
+	cli "gopkg.in/urfave/cli.v2"
+
 	"github.com/johnwyles/vrddt-droplets/interfaces/config"
-	"github.com/johnwyles/vrddt-droplets/interfaces/queue"
-	"github.com/johnwyles/vrddt-droplets/interfaces/store"
-	"github.com/johnwyles/vrddt-droplets/pkg/logger"
+	"github.com/johnwyles/vrddt-droplets/usecases/converter"
 	"github.com/johnwyles/vrddt-droplets/usecases/redditvideos"
 	"github.com/johnwyles/vrddt-droplets/usecases/vrddtvideos"
 )
 
-// Converter will process a reddit URL into a vrddt video using our internal
+// Processor will process a reddit URL into a vrddt video using our internal
 // services
-func Converter(cfg *config.Config) {
+func Processor(cfg *config.Config) *cli.Command {
+	return &cli.Command{
+		Action: processor,
+		Before: beforeProcessor,
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Aliases: []string{"f"},
+				EnvVars: []string{"VRDDT_ADMIN_INSERT_JSON_TO_QUEUE_FILE"},
+				Name:    "json-file",
+				Usage:   "Specifies the JSON file to load Reddit URLs from",
+				Value:   "",
+			},
+		},
+		Name:  "insert-json-to-queue",
+		Usage: "Blindly instert a JSON file of Reddit data to the Queue",
+	}
+}
+
+// beforeConverter will validate that we have set a JSON file
+func beforeProcessor(cliContext *cli.Context) (err error) {
+	if !cliContext.IsSet("json-file") {
+		cli.ShowCommandHelp(cliContext, cliContext.Command.Name)
+		err = fmt.Errorf("A JSON file was not supplied")
+	}
+
+	return
+}
+
+func processor(cliContext *cli.Context) (err error) {
 	errs := make(chan error, 0)
 	successes := make(chan bool, 0)
 	errorCount := 0
 	successCount := 0
 	messageCount := 0
 
-	db, closeMongoSession, err := mongo.Connect(cfg.Store.Mongo.URI, true)
-	if err != nil {
-		loggerHandle.Fatalf("Failed to connect to MongoDB: %v", err)
-	}
-	defer closeMongoSession()
+	vrddtVideoConstructor := vrddtvideos.NewConstructor(loggerHandle, services.Store)
+	vrddtVideoDestructor := vrddtvideos.NewDestructor(loggerHandle, services.Store)
+	vrddtVideoRetriever := vrddtvideos.NewRetriever(loggerHandle, services.Store)
 
-	redditVideoStore := mongo.NewRedditVideoStore(db)
-	vrddtVideoStore := mongo.NewVrddtVideoStore(db)
-
-	q, closeRabbitMQSession, err := rabbitmq.Connect(cfg.Queue.RabbitMQ.URI)
-	if err != nil {
-		loggerHandle.Fatalf("Failed to connect to RabbitMQ: %v", err)
-	}
-	defer closeRabbitMQSession()
-
-	redditVideoWorkQueue := rabbitmq.NewRedditVideoWorkQueue(q)
-
-	vrddtVideoConstructor := vrddtvideos.NewConstructor(loggerHandle, vrddtVideoStore)
-	vrddtVideoDestructor := vrddtvideos.NewDestructor(loggerHandle, vrddtVideoStore)
-	vrddtVideoRetriever := vrddtvideos.NewRetriever(loggerHandle, vrddtVideoStore)
-
-	redditVideoConstructor := redditvideos.NewConstructor(loggerHandle, redditVideoWorkQueue, redditVideoStore)
-	redditVideoDestructor := redditvideos.NewDestructor(loggerHandle, redditVideoWorkQueue, redditVideoStore)
-	redditVideoRetriever := redditvideos.NewRetriever(loggerHandle, redditVideoStore, vrddtVideoStore)
-
-	conv, err := ffmpeg.NewConverter(
-		GlobalServices.Converter,
-		q,
-		db,
-		GlobalServices.Storage,
-	)
+	redditVideoConstructor := redditvideos.NewConstructor(loggerHandle, services.Queue, services.Store)
+	redditVideoDestructor := redditvideos.NewDestructor(loggerHandle, services.Queue, services.Store)
+	redditVideoRetriever := redditvideos.NewRetriever(loggerHandle, services.Store)
 
 	for {
 		messageCount++
@@ -119,6 +124,4 @@ func Converter(cfg *config.Config) {
 
 	close(errs)
 	close(successes)
-
-	return
 }
