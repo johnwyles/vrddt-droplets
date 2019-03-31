@@ -8,7 +8,6 @@ import (
 	cli "gopkg.in/urfave/cli.v2"
 
 	"github.com/johnwyles/vrddt-droplets/interfaces/config"
-	"github.com/johnwyles/vrddt-droplets/usecases/converter"
 	"github.com/johnwyles/vrddt-droplets/usecases/redditvideos"
 	"github.com/johnwyles/vrddt-droplets/usecases/vrddtvideos"
 )
