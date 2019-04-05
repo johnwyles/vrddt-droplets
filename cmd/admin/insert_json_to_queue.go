@@ -39,7 +39,13 @@ func beforeInsertJSONToQueue(cliContext *cli.Context) (err error) {
 	if !cliContext.IsSet("json-file") {
 		cli.ShowCommandHelp(cliContext, cliContext.Command.Name)
 		err = fmt.Errorf("A JSON file was not supplied")
+		return
 	}
+
+	// TODO: Context
+	ctx := context.TODO()
+	services.Queue.Init(ctx)
+	services.Store.Init(ctx)
 
 	return
 }
@@ -63,16 +69,11 @@ func insertJSONToQueue(cliContext *cli.Context) (err error) {
 	// the Queue so we can test if the API and Web tiers are doing their job as
 	// this should never occur
 	for _, redditVideo := range redditVideos {
-		// message, err := json.Marshal(redditVideo)
-		if err != nil {
-			loggerHandle.Errorf("Problem marshaling to JSON %#v: %s", redditVideo, err)
-			continue
-		}
-		loggerHandle.Debugf("Enqueuing video: %#v\n", redditVideo)
-
 		if err = redditVideoConstructor.Push(context.TODO(), &redditVideo); err != nil {
 			loggerHandle.Errorf("Error pushing JSON to queue: %s", err)
 		}
+
+		loggerHandle.Debugf("Enqueued video: %#v\n", redditVideo)
 	}
 
 	return

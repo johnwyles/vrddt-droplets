@@ -6,7 +6,8 @@ import (
 
 // Worker is the generic interface for a worker process store
 type Worker interface {
-	GetWork(ctx *context.Context) error
-	DoWork(ctx *context.Context) error
-	CompleteWork(ctx *context.Context) error
+	CompleteWork(ctx context.Context) (err error)
+	DoWork(ctx context.Context) (err error)
+	GetWork(ctx context.Context) (err error)
+	Init(ctx context.Context) (err error)
 }

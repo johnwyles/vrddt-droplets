@@ -12,6 +12,7 @@ import (
 	"github.com/johnwyles/vrddt-droplets/interfaces/queue"
 	"github.com/johnwyles/vrddt-droplets/interfaces/storage"
 	"github.com/johnwyles/vrddt-droplets/interfaces/store"
+	"github.com/johnwyles/vrddt-droplets/interfaces/worker"
 	"github.com/johnwyles/vrddt-droplets/pkg/logger"
 )
 
@@ -21,6 +22,7 @@ type Services struct {
 	Queue     queue.Queue
 	Storage   storage.Storage
 	Store     store.Store
+	Worker    worker.Worker
 }
 
 // loggerHandle is the current logger facility
@@ -32,7 +34,7 @@ var services = &Services{}
 // allCommands are all of the commands we are able to run
 func allCommands(cfg *config.Config) []*cli.Command {
 	return []*cli.Command{
-		Converter(cfg),
+		Processor(cfg),
 	}
 }
 
@@ -78,7 +80,7 @@ func main() {
 		Worker: config.WorkerConfig{
 			Converter: config.WorkerConverterConfig{
 				MaxErrors: 10,
-				Sleep:     1000,
+				Sleep:     500,
 			},
 		},
 	}
@@ -117,9 +119,9 @@ func main() {
 			&cli.StringFlag{
 				Destination: &cfg.Converter.FFmpeg.Path,
 				EnvVars:     []string{"VRDDT_CONVERTER_FFMPEG_PATH"},
-				Name:        "Converter.FFmpeg.ExecutableName",
+				Name:        "Converter.FFmpeg.Path",
 				Usage:       "Enable colored logging",
-				Value:       cfg.Converter.FFmpeg.ExecutableName,
+				Value:       cfg.Converter.FFmpeg.Path,
 			},
 		),
 		altsrc.NewStringFlag(
@@ -233,11 +235,12 @@ func main() {
 				return &altsrc.MapInputSource{}, nil
 			},
 		),
-		Flags:   flags,
-		Name:    "vrddt-worker",
-		Prepare: prepareResources(cfg),
-		Usage:   "vrddt Long-lived worker processes",
-		Version: "v0.0.1",
+		Commands: allCommands(cfg),
+		Flags:    flags,
+		Name:     "vrddt-worker",
+		Prepare:  prepareResources(cfg),
+		Usage:    "vrddt Long-lived worker processes",
+		Version:  "v0.0.1",
 	}
 
 	cli.HelpFlag = &cli.BoolFlag{
@@ -272,18 +275,39 @@ func prepareResources(cfg *config.Config) cli.PrepareFunc {
 		// Initalize connections
 		loggerHandle = logger.New(os.Stderr, cfg.Log.Level, cfg.Log.Format)
 
+		// Setup converter
+		services.Converter, err = converter.FFmpeg(&cfg.Converter.FFmpeg, loggerHandle)
+		if err != nil {
+			return
+		}
+
+		// Setup queue
 		services.Queue, err = queue.RabbitMQ(&cfg.Queue.RabbitMQ, loggerHandle)
 		if err != nil {
 			return
 		}
 
-		// Setup the store
+		// Setup storage
+		services.Storage, err = storage.GCS(&cfg.Storage.GCS, loggerHandle)
+		if err != nil {
+			return
+		}
+
+		// Setup store
 		services.Store, err = store.Mongo(&cfg.Store.Mongo, loggerHandle)
 		if err != nil {
 			return
 		}
 
-		services.Converter, err = converter.FFmpeg(&cfg.Converter.FFmpeg, loggerHandle)
+		// Setup worker
+		services.Worker, err = worker.Converter(
+			&cfg.Worker.Converter,
+			loggerHandle,
+			services.Converter,
+			services.Queue,
+			services.Store,
+			services.Storage,
+		)
 		if err != nil {
 			return
 		}

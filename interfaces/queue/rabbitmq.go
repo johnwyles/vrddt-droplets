@@ -22,7 +22,7 @@ import (
 // rabbitmqConnection contains all the information about a RabbitMQ connection
 type rabbitmqConnection struct {
 	bindingKeyName string
-	consmerID      string
+	consumerID     string
 	channel        *amqp.Channel
 	connection     *amqp.Connection
 	connectionType ConnectionType
@@ -147,29 +147,27 @@ func (r *rabbitmqConnection) MakeConsumer(ctx context.Context) (err error) {
 	if err != nil {
 		return fmt.Errorf("Error generating new random UUID: %s", err)
 	}
-	r.consmerID = uuid.String()
-	r.log.Infof("New consumerID generated: %s", r.consmerID)
+	r.consumerID = uuid.String()
 
 	if err = r.channel.Qos(1, 0, false); err != nil {
 		return fmt.Errorf("Error setting QoS level: %s", err)
 	}
 
 	r.delivery, err = r.channel.Consume(
-		r.queueName, // queue
-		r.consmerID, // consumer
-		false,       // auto-ack
-		false,       // exclusive
-		false,       // no-local
-		false,       // no-wait
-		nil,         // args
+		r.queueName,  // queue
+		r.consumerID, // consumer
+		false,        // auto-ack
+		false,        // exclusive
+		false,        // no-local
+		false,        // no-wait
+		nil,          // args
 	)
 	if err != nil {
 		return
 	}
 
 	r.connectionType = Consumer
-
-	r.log.Infof("Channel consumer created")
+	r.log.Debugf("Channel consumer created: %s", r.consumerID)
 
 	return
 }

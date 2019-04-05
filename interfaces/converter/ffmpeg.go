@@ -72,6 +72,11 @@ func (f *ffmpeg) Convert(ctx context.Context, inputVideoPath string, inputAudioP
 	return
 }
 
+// Init is the initialization routine
+func (f *ffmpeg) Init(ctx context.Context) (err error) {
+	return
+}
+
 // arrayInject is a helper function written by Alirus on StackOverflow in my
 // inquiry to find a way to inject one array into another _elegantly_:
 // https://stackoverflow.com/a/53647212/776896

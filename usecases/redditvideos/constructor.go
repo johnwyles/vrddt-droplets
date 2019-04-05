@@ -2,6 +2,7 @@ package redditvideos
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/johnwyles/vrddt-droplets/domain"
 	"github.com/johnwyles/vrddt-droplets/interfaces/queue"
@@ -30,12 +31,12 @@ type Constructor struct {
 // Create creates a new reddit video in the system using the supplied
 // RedditVideo object
 func (cons *Constructor) Create(ctx context.Context, redditVideo *domain.RedditVideo) (err error) {
-	if err := redditVideo.Validate(); err != nil {
-		return err
+	if err = redditVideo.Validate(); err != nil {
+		return
 	}
 
-	if err := redditVideo.SetFinalURL(); err != nil {
-		return err
+	if err = redditVideo.SetFinalURL(); err != nil {
+		return
 	}
 
 	redditVideo, err = cons.store.GetRedditVideo(
@@ -51,20 +52,26 @@ func (cons *Constructor) Create(ctx context.Context, redditVideo *domain.RedditV
 }
 
 // Push pops a reddit video from the queue.
-func (cons *Constructor) Push(ctx context.Context, redditVideo *domain.RedditVideo) error {
-	if err := redditVideo.Validate(); err != nil {
-		return err
+func (cons *Constructor) Push(ctx context.Context, redditVideo *domain.RedditVideo) (err error) {
+	if err = redditVideo.Validate(); err != nil {
+		return
 	}
 
-	if err := redditVideo.SetFinalURL(); err != nil {
-		return err
+	if err = redditVideo.SetFinalURL(); err != nil {
+		return
 	}
 
 	cons.queue.MakeClient(ctx)
-	if err := cons.queue.Push(ctx, redditVideo); err != nil {
-		cons.Debugf("failed to pop reddit video: %v", err)
-		return err
+
+	message, err := json.Marshal(redditVideo)
+	if err != nil {
+		return
 	}
 
-	return nil
+	if err = cons.queue.Push(ctx, message); err != nil {
+		cons.Errorf("Failed to push reddit video: %v", err)
+		return
+	}
+
+	return
 }
