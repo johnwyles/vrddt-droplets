@@ -17,7 +17,8 @@ import (
 func Processor(cfg *config.Config) *cli.Command {
 	return &cli.Command{
 		Action: processor,
-		Before: beforeProcessor,
+		After:  afterProcessor(cfg),
+		Before: beforeProcessor(cfg),
 		Flags: []cli.Flag{
 			&cli.IntFlag{
 				Aliases: []string{"e"},
@@ -39,17 +40,35 @@ func Processor(cfg *config.Config) *cli.Command {
 	}
 }
 
-// beforeConverter will validate before the command is run
-func beforeProcessor(cliContext *cli.Context) (err error) {
-	// TODO: Context
-	ctx := context.TODO()
-	services.Converter.Init(ctx)
-	services.Queue.Init(ctx)
-	services.Storage.Init(ctx)
-	services.Store.Init(ctx)
-	services.Worker.Init(ctx)
+// afterProcessor will execute after Action() to cleanup
+func afterProcessor(cfg *config.Config) cli.AfterFunc {
+	return func(cliContext *cli.Context) (err error) {
+		// TODO: Context
+		ctx := context.TODO()
 
-	return
+		// We don't care about any cleanup errors
+		services.Queue.Cleanup(ctx)
+		services.Store.Cleanup(ctx)
+		services.Storage.Cleanup(ctx)
+
+		return
+	}
+}
+
+// beforeConverter will validate before the command is run
+func beforeProcessor(cfg *config.Config) cli.BeforeFunc {
+	return func(cliContext *cli.Context) (err error) {
+		// TODO: Context
+		ctx := context.TODO()
+
+		services.Converter.Init(ctx)
+		services.Queue.Init(ctx)
+		services.Storage.Init(ctx)
+		services.Store.Init(ctx)
+		services.Worker.Init(ctx)
+
+		return
+	}
 }
 
 // processor is the main function which will perform work: digesting Reddit URLs
@@ -61,14 +80,6 @@ func processor(cliContext *cli.Context) (err error) {
 	errorCount := 0
 	successCount := 0
 	messageCount := 0
-
-	// vrddtVideoConstructor := vrddtvideos.NewConstructor(loggerHandle, services.Store)
-	// vrddtVideoDestructor := vrddtvideos.NewDestructor(loggerHandle, services.Store)
-	// vrddtVideoRetriever := vrddtvideos.NewRetriever(loggerHandle, services.Store)
-
-	// redditVideoConstructor := redditvideos.NewConstructor(loggerHandle, services.Queue, services.Store)
-	// redditVideoDestructor := redditvideos.NewDestructor(loggerHandle, services.Queue, services.Store)
-	// redditVideoRetriever := redditvideos.NewRetriever(loggerHandle, services.Store)
 
 	for {
 		messageCount++

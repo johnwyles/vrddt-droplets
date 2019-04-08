@@ -3,6 +3,10 @@
     [Converter.FFmpeg]
 	   Path = "/usr/local/bin/ffmpeg"
 
+[Log]
+    Format  = "text"
+    Level   = "debug"
+
 [Queue]
     Type = "rabbitmq"
     [Queue.RabbitMQ]
@@ -30,9 +34,6 @@
     [Store.Memory]
         MaxSize = 100000
 [Worker]
-    [Worker.Converter]
+    [Worker.Processor]
         MaxErrors = 10
         Sleep = 500
-[Log]
-    Format  = "text"
-    Level   = "debug"

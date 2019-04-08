@@ -1,9 +1,16 @@
 package config
 
+// StorageType is the type of storage
 type StorageType int
 
 const (
-	StorageConfigGCS   StorageType = iota
+	// StorageConfigGCS is the type reserved for GCS storage
+	StorageConfigGCS StorageType = iota
+
+	// StorageConfigS3 is the type reserved for S3 storage
+	StorageConfigS3 StorageType = iota
+
+	// StorageConfigLocal is the type reserved for local storage
 	StorageConfigLocal StorageType = iota
 )
 
@@ -16,5 +23,5 @@ type StorageConfig struct {
 
 // String will return the string representation of the iota
 func (s StorageType) String() string {
-	return [...]string{"gcs", "local"}[s]
+	return [...]string{"gcs", "s3", "local"}[s]
 }

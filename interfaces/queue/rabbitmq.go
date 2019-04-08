@@ -40,6 +40,7 @@ func RabbitMQ(cfg *config.QueueRabbitMQConfig, loggerHandle logger.Logger) (queu
 
 	queue = &rabbitmqConnection{
 		bindingKeyName: cfg.BindingKeyName,
+		connectionType: Client,
 		exchangeName:   cfg.ExchangeName,
 		log:            loggerHandle,
 		queueName:      cfg.QueueName,
@@ -142,6 +143,11 @@ func (r *rabbitmqConnection) MakeClient(ctx context.Context) (err error) {
 // MakeConsumer will setup whatever is necessary to pop messages and
 // will set the Delivery channel
 func (r *rabbitmqConnection) MakeConsumer(ctx context.Context) (err error) {
+	if r.consumerID != "" && r.connectionType == Consumer {
+		r.log.Debugf("Channel was already made a consumer: %s", r.consumerID)
+		return
+	}
+
 	// Setup a new AMQP consumer UUID
 	uuid, err := uuid.NewRandom()
 	if err != nil {

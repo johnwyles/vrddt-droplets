@@ -1,9 +1,11 @@
 package config
 
+// ConverterType is the type of converter
 type ConverterType int
 
 const (
-	ConverterFmpeg ConverterType = iota
+	// ConverterFFmpeg is the type reserved for a FFmpeg converter
+	ConverterFFmpeg ConverterType = iota
 )
 
 // ConverterConfig holds all the different implmentations for video conversion
