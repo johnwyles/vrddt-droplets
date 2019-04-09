@@ -48,11 +48,7 @@ func (ret *Retriever) GetByMD5(ctx context.Context, md5 string) (*domain.VrddtVi
 
 // Search finds all the vrddt videos matching the parameters in the query.
 func (ret *Retriever) Search(ctx context.Context, selector store.Selector, limit int) ([]*domain.VrddtVideo, error) {
-	vrddtVideos, err := ret.store.GetVrddtVideos(
-		ctx,
-		selector,
-		limit,
-	)
+	vrddtVideos, err := ret.store.GetVrddtVideos(ctx, selector, limit)
 	if err != nil {
 		return nil, err
 	}

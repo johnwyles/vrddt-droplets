@@ -8,6 +8,7 @@ import (
 	"gopkg.in/mgo.v2/bson"
 
 	"github.com/johnwyles/vrddt-droplets/domain"
+	"github.com/johnwyles/vrddt-droplets/interfaces/store"
 	"github.com/johnwyles/vrddt-droplets/pkg/logger"
 )
 
@@ -106,15 +107,15 @@ func (vvc *vrddtVideosController) getByMD5(wr http.ResponseWriter, req *http.Req
 // }
 
 type vrddtConstructor interface {
-	Create(ctx context.Context, vrddtVideo *domain.VrddtVideo) (*domain.VrddtVideo, error)
+	Create(ctx context.Context, vrddtVideo *domain.VrddtVideo) (err error)
 }
 
 type vrddtDestructor interface {
-	Delete(ctx context.Context, id bson.ObjectId) (*domain.VrddtVideo, error)
+	Delete(ctx context.Context, id bson.ObjectId) (err error)
 }
 
 type vrddtRetriever interface {
-	GetByID(ctx context.Context, id bson.ObjectId) (*domain.VrddtVideo, error)
-	GetByMD5(ctx context.Context, md5 string) (*domain.VrddtVideo, error)
-	Search(ctx context.Context, limit int) ([]domain.VrddtVideo, error)
+	GetByID(ctx context.Context, id bson.ObjectId) (vrddtVideo *domain.VrddtVideo, err error)
+	GetByMD5(ctx context.Context, md5 string) (vrddtVideo *domain.VrddtVideo, err error)
+	Search(ctx context.Context, selector store.Selector, limit int) (vrddtVideos []*domain.VrddtVideo, err error)
 }

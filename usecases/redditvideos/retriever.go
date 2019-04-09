@@ -81,14 +81,8 @@ func (ret *Retriever) GetVrddtVideoByID(ctx context.Context, id bson.ObjectId) (
 
 // Search finds all the vrddt videos matching the parameters in the query.
 // TODO: This is incomplete
-func (ret *Retriever) Search(ctx context.Context, title string, limit int) ([]*domain.RedditVideo, error) {
-	redditVideos, err := ret.store.GetRedditVideos(
-		ctx,
-		store.Selector{
-			"title": title,
-		},
-		limit,
-	)
+func (ret *Retriever) Search(ctx context.Context, selector store.Selector, limit int) ([]*domain.RedditVideo, error) {
+	redditVideos, err := ret.store.GetRedditVideos(ctx, selector, limit)
 	if err != nil {
 		return nil, err
 	}

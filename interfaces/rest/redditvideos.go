@@ -9,6 +9,7 @@ import (
 	"gopkg.in/mgo.v2/bson"
 
 	"github.com/johnwyles/vrddt-droplets/domain"
+	"github.com/johnwyles/vrddt-droplets/interfaces/store"
 	"github.com/johnwyles/vrddt-droplets/pkg/errors"
 	"github.com/johnwyles/vrddt-droplets/pkg/logger"
 )
@@ -118,13 +119,12 @@ type redditVideosController struct {
 func (rvc *redditVideosController) delete(wr http.ResponseWriter, req *http.Request) {
 	if id, ok := mux.Vars(req)["id"]; ok {
 		bsonID := bson.ObjectIdHex(id)
-		redditVideo, err := rvc.des.Delete(req.Context(), bsonID)
-		if err != nil {
+		if err := rvc.des.Delete(req.Context(), bsonID); err != nil {
 			respondErr(wr, err)
 			return
 		}
 
-		respond(wr, http.StatusOK, redditVideo)
+		respond(wr, http.StatusOK, id)
 		return
 	}
 
@@ -310,19 +310,19 @@ func (rvc *redditVideosController) getVrddtVideoByURL(wr http.ResponseWriter, re
 // }
 
 type redditConstructor interface {
-	Create(ctx context.Context, redditVideo *domain.RedditVideo) (*domain.RedditVideo, error)
-	Push(ctx context.Context, redditVideo *domain.RedditVideo) error
+	Create(ctx context.Context, redditVideo *domain.RedditVideo) (err error)
+	Push(ctx context.Context, redditVideo *domain.RedditVideo) (err error)
 }
 
 type redditDestructor interface {
-	Delete(ctx context.Context, id bson.ObjectId) (*domain.RedditVideo, error)
-	Pop(ctx context.Context) (*domain.RedditVideo, error)
+	Delete(ctx context.Context, id bson.ObjectId) (err error)
+	Pop(ctx context.Context) (redditVideo *domain.RedditVideo, err error)
 }
 
 // TODO: Search
 type redditRetriever interface {
-	GetByID(ctx context.Context, id bson.ObjectId) (*domain.RedditVideo, error)
-	GetByURL(ctx context.Context, url string) (*domain.RedditVideo, error)
-	GetVrddtVideoByID(ctx context.Context, id bson.ObjectId) (*domain.VrddtVideo, error)
-	Search(ctx context.Context, q []string, limit int) ([]domain.RedditVideo, error)
+	GetByID(ctx context.Context, id bson.ObjectId) (redditVideo *domain.RedditVideo, err error)
+	GetByURL(ctx context.Context, url string) (redditVideo *domain.RedditVideo, err error)
+	GetVrddtVideoByID(ctx context.Context, id bson.ObjectId) (rredditVideov *domain.VrddtVideo, err error)
+	Search(ctx context.Context, selector store.Selector, limit int) (redditVideos []*domain.RedditVideo, err error)
 }

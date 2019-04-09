@@ -78,7 +78,7 @@ func main() {
 			Type: config.StoreConfigMongo,
 		},
 		Worker: config.WorkerConfig{
-			Converter: config.WorkerConverterConfig{
+			Processor: config.WorkerProcessorConfig{
 				MaxErrors: 10,
 				Sleep:     500,
 			},
@@ -198,20 +198,20 @@ func main() {
 		),
 		altsrc.NewIntFlag(
 			&cli.IntFlag{
-				Destination: &cfg.Worker.Converter.MaxErrors,
-				EnvVars:     []string{"VRDDT_WORKER_CONVERTER_MAX_ERRORS"},
-				Name:        "WorkerConverter.MaxErrors",
+				Destination: &cfg.Worker.Processor.MaxErrors,
+				EnvVars:     []string{"VRDDT_WORKER_PROCESSOR_MAX_ERRORS"},
+				Name:        "Worker.Processor.MaxErrors",
 				Usage:       "Maximum number of errors tolerated before the worker dies completely",
-				Value:       cfg.Worker.Converter.MaxErrors,
+				Value:       cfg.Worker.Processor.MaxErrors,
 			},
 		),
 		altsrc.NewIntFlag(
 			&cli.IntFlag{
-				Destination: &cfg.Worker.Converter.Sleep,
-				EnvVars:     []string{"VRDDT_WORKER_CONVERTER_SLEEP"},
-				Name:        "WorkerConverter.Sleep",
+				Destination: &cfg.Worker.Processor.Sleep,
+				EnvVars:     []string{"VRDDT_WORKER_PROCESSOR_SLEEP"},
+				Name:        "Worker.Processor.Sleep",
 				Usage:       "Number of milliseconds to sleep after processing each request",
-				Value:       cfg.Worker.Converter.Sleep,
+				Value:       cfg.Worker.Processor.Sleep,
 			},
 		),
 	}
@@ -300,8 +300,8 @@ func prepareResources(cfg *config.Config) cli.PrepareFunc {
 		}
 
 		// Setup worker
-		services.Worker, err = worker.Converter(
-			&cfg.Worker.Converter,
+		services.Worker, err = worker.Processor(
+			&cfg.Worker.Processor,
 			loggerHandle,
 			services.Converter,
 			services.Queue,
