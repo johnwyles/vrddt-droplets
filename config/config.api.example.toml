@@ -1,5 +1,5 @@
 [API]
-    Address = ":8080"
+    Address = ":3000"
     GracefulTimeout = 60
 
 [Log]

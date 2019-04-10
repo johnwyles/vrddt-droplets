@@ -26,18 +26,18 @@ type Constructor struct {
 }
 
 // Create validates and persists the vrddt video into the store.
-func (c *Constructor) Create(ctx context.Context, vrddtVideo *domain.VrddtVideo) (resultVideo *domain.VrddtVideo, err error) {
+func (c *Constructor) Create(ctx context.Context, vrddtVideo *domain.VrddtVideo) (err error) {
 	if err = vrddtVideo.Validate(); err != nil {
-		return nil, err
+		return
 	}
 
-	resultVideo, err = c.store.GetVrddtVideo(ctx,
+	_, err = c.store.GetVrddtVideo(ctx,
 		store.Selector{
 			"_id": vrddtVideo.ID,
 		},
 	)
 	if err != nil {
-		return nil, errors.Conflict("VrddtVideo", vrddtVideo.ID.Hex())
+		return errors.Conflict("VrddtVideo", vrddtVideo.ID.Hex())
 	}
 
 	err = c.store.CreateVrddtVideo(ctx, vrddtVideo)

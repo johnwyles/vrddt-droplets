@@ -11,9 +11,9 @@ import (
 	"github.com/johnwyles/vrddt-droplets/interfaces/config"
 	"github.com/johnwyles/vrddt-droplets/pkg/logger"
 
-	"github.com/johnwyles/vrddt-droplets/interfaces/mongo"
-	"github.com/johnwyles/vrddt-droplets/interfaces/rabbitmq"
+	"github.com/johnwyles/vrddt-droplets/interfaces/queue"
 	"github.com/johnwyles/vrddt-droplets/interfaces/rest"
+	"github.com/johnwyles/vrddt-droplets/interfaces/store"
 	"github.com/johnwyles/vrddt-droplets/pkg/graceful"
 	"github.com/johnwyles/vrddt-droplets/pkg/middlewares"
 	"github.com/johnwyles/vrddt-droplets/usecases/redditvideos"
@@ -29,8 +29,8 @@ func main() {
 	// options with the arguments on the command line
 	cfg := &config.Config{
 		API: config.APIConfig{
-			Address:         ":8080",
-			GracefulTimeout: 20 * time.Second,
+			Address:         ":3000",
+			GracefulTimeout: 30,
 		},
 		Log: config.LogConfig{
 			Format: "text",
@@ -75,9 +75,19 @@ func main() {
 				Aliases:     []string{"a"},
 				Destination: &cfg.API.Address,
 				EnvVars:     []string{"VRDDT_API_ADDRESS"},
-				Name:        "API listen address",
-				Usage:       "API listen address",
+				Name:        "API.Address",
+				Usage:       "API listening address",
 				Value:       cfg.API.Address,
+			},
+		),
+		altsrc.NewIntFlag(
+			&cli.IntFlag{
+				Aliases:     []string{"t"},
+				Destination: &cfg.API.GracefulTimeout,
+				EnvVars:     []string{"VRDDT_API_GRACEFUL_TIMEOUT"},
+				Name:        "API.GracefulTimeout",
+				Usage:       "API graceful timeout (in seconds)",
+				Value:       cfg.API.GracefulTimeout,
 			},
 		),
 		altsrc.NewStringFlag(
@@ -203,30 +213,27 @@ func main() {
 // rootAction is the what we execute if no commands are specified
 func rootAction(cfg *config.Config) cli.ActionFunc {
 	return func(cliContext *cli.Context) (err error) {
-		db, closeMongoSession, err := mongo.Connect(cfg.Store.Mongo.URI, true)
+		// Initalize connections
+		loggerHandle = logger.New(os.Stderr, cfg.Log.Level, cfg.Log.Format)
+
+		q, err := queue.RabbitMQ(&cfg.Queue.RabbitMQ, loggerHandle)
 		if err != nil {
-			loggerHandle.Fatalf("Failed to connect to MongoDB: %v", err)
+			return
 		}
-		defer closeMongoSession()
 
-		redditVideoStore := mongo.NewRedditVideoStore(db)
-		vrddtVideoStore := mongo.NewVrddtVideoStore(db)
-
-		q, closeRabbitMQSession, err := rabbitmq.Connect(cfg.Queue.RabbitMQ.URI)
+		// Setup the store
+		str, err := store.Mongo(&cfg.Store.Mongo, loggerHandle)
 		if err != nil {
-			loggerHandle.Fatalf("Failed to connect to RabbitMQ: %v", err)
+			return
 		}
-		defer closeRabbitMQSession()
 
-		redditVideoWorkQueue := rabbitmq.NewRedditVideoWorkQueue(q)
+		vrddtVideoConstructor := vrddtvideos.NewConstructor(loggerHandle, str)
+		vrddtVideoDestructor := vrddtvideos.NewDestructor(loggerHandle, str)
+		vrddtVideoRetriever := vrddtvideos.NewRetriever(loggerHandle, str)
 
-		vrddtVideoConstructor := vrddtvideos.NewConstructor(loggerHandle, vrddtVideoStore)
-		vrddtVideoDestructor := vrddtvideos.NewDestructor(loggerHandle, vrddtVideoStore)
-		vrddtVideoRetriever := vrddtvideos.NewRetriever(loggerHandle, vrddtVideoStore)
-
-		redditVideoConstructor := redditvideos.NewConstructor(loggerHandle, redditVideoWorkQueue, redditVideoStore)
-		redditVideoDestructor := redditvideos.NewDestructor(loggerHandle, redditVideoWorkQueue, redditVideoStore)
-		redditVideoRetriever := redditvideos.NewRetriever(loggerHandle, redditVideoStore, vrddtVideoStore)
+		redditVideoConstructor := redditvideos.NewConstructor(loggerHandle, q, str)
+		redditVideoDestructor := redditvideos.NewDestructor(loggerHandle, q, str)
+		redditVideoRetriever := redditvideos.NewRetriever(loggerHandle, str)
 
 		restHandler := rest.New(
 			loggerHandle,
@@ -244,13 +251,13 @@ func rootAction(cfg *config.Config) cli.ActionFunc {
 		handler := middlewares.WithRequestLogging(loggerHandle, router)
 		handler = middlewares.WithRecovery(loggerHandle, handler)
 
-		srv := graceful.NewServer(handler, cfg.API.GracefulTimeout, os.Interrupt)
+		srv := graceful.NewServer(handler, time.Duration(cfg.API.GracefulTimeout)*time.Second, os.Interrupt)
 		srv.Log = loggerHandle.Errorf
 		srv.Addr = cfg.API.Address
 
-		loggerHandle.Infof("Listening for requests as: %s", cfg.API.Address)
+		loggerHandle.Infof("API is listening as: %s", cfg.API.Address)
 		if err := srv.ListenAndServe(); err != nil {
-			loggerHandle.Fatalf("http server exited: %s", err)
+			loggerHandle.Fatalf("API server exited: %s", err)
 		}
 
 		return

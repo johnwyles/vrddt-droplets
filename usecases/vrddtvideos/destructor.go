@@ -5,13 +5,12 @@ import (
 
 	"gopkg.in/mgo.v2/bson"
 
-	"github.com/johnwyles/vrddt-droplets/domain"
 	"github.com/johnwyles/vrddt-droplets/interfaces/store"
 	"github.com/johnwyles/vrddt-droplets/pkg/logger"
 )
 
 // NewDestructor initializes the vrddt  usecase.
-func NewDestructor(lg logger.Logger, store store.Store) *Destructor {
+func NewDestructor(lg logger.Logger, store store.Store) (dstr *Destructor) {
 	return &Destructor{
 		Logger: lg,
 
@@ -27,12 +26,13 @@ type Destructor struct {
 }
 
 // Delete removes the vrddt video from the store.
-func (d *Destructor) Delete(ctx context.Context, id bson.ObjectId) (deletedVideo *domain.VrddtVideo, err error) {
+func (d *Destructor) Delete(ctx context.Context, id bson.ObjectId) (err error) {
 	err = d.store.DeleteVrddtVideo(
 		ctx,
 		store.Selector{
 			"_id": id,
 		},
 	)
+
 	return
 }
