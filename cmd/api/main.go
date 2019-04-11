@@ -4,17 +4,15 @@ import (
 	"os"
 	"time"
 
-	"github.com/gorilla/mux"
 	cli "gopkg.in/urfave/cli.v2"
 	"gopkg.in/urfave/cli.v2/altsrc"
 
 	"github.com/johnwyles/vrddt-droplets/interfaces/config"
-	"github.com/johnwyles/vrddt-droplets/pkg/logger"
-
 	"github.com/johnwyles/vrddt-droplets/interfaces/queue"
 	"github.com/johnwyles/vrddt-droplets/interfaces/rest"
 	"github.com/johnwyles/vrddt-droplets/interfaces/store"
 	"github.com/johnwyles/vrddt-droplets/pkg/graceful"
+	"github.com/johnwyles/vrddt-droplets/pkg/logger"
 	"github.com/johnwyles/vrddt-droplets/pkg/middlewares"
 	"github.com/johnwyles/vrddt-droplets/usecases/redditvideos"
 	"github.com/johnwyles/vrddt-droplets/usecases/vrddtvideos"
@@ -227,30 +225,26 @@ func rootAction(cfg *config.Config) cli.ActionFunc {
 			return
 		}
 
-		vrddtVideoConstructor := vrddtvideos.NewConstructor(loggerHandle, str)
-		vrddtVideoDestructor := vrddtvideos.NewDestructor(loggerHandle, str)
-		vrddtVideoRetriever := vrddtvideos.NewRetriever(loggerHandle, str)
+		// Get the REST controller
+		restController := rest.New(loggerHandle)
 
-		redditVideoConstructor := redditvideos.NewConstructor(loggerHandle, q, str)
-		redditVideoDestructor := redditvideos.NewDestructor(loggerHandle, q, str)
-		redditVideoRetriever := redditvideos.NewRetriever(loggerHandle, str)
+		// Setup API endpoints for Reddit videos
+		rvc := redditvideos.NewConstructor(loggerHandle, q, str)
+		rvd := redditvideos.NewDestructor(loggerHandle, q, str)
+		rvr := redditvideos.NewRetriever(loggerHandle, str)
+		restController.AddRedditVideosAPI(loggerHandle, rvc, rvd, rvr)
 
-		restHandler := rest.New(
-			loggerHandle,
-			redditVideoConstructor,
-			redditVideoDestructor,
-			redditVideoRetriever,
-			vrddtVideoConstructor,
-			vrddtVideoDestructor,
-			vrddtVideoRetriever,
-		)
+		// Setup API endpoints for vrddt videos
+		vvc := vrddtvideos.NewConstructor(loggerHandle, str)
+		vvd := vrddtvideos.NewDestructor(loggerHandle, str)
+		vvr := vrddtvideos.NewRetriever(loggerHandle, str)
+		restController.AddVrddtVideosAPI(loggerHandle, vvc, vvd, vvr)
 
-		router := mux.NewRouter()
-		router.PathPrefix("/").Handler(restHandler)
-
-		handler := middlewares.WithRequestLogging(loggerHandle, router)
+		// Setup API middleware
+		handler := middlewares.WithRequestLogging(loggerHandle, restController.Router)
 		handler = middlewares.WithRecovery(loggerHandle, handler)
 
+		// Setup HTTP server
 		srv := graceful.NewServer(handler, time.Duration(cfg.API.GracefulTimeout)*time.Second, os.Interrupt)
 		srv.Log = loggerHandle.Errorf
 		srv.Addr = cfg.API.Address

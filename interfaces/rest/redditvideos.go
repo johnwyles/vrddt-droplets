@@ -14,10 +14,10 @@ import (
 	"github.com/johnwyles/vrddt-droplets/pkg/logger"
 )
 
-// addRedditVideosAPI will register the various routes and their methods
-func addRedditVideosAPI(router *mux.Router, cons redditConstructor, des redditDestructor, ret redditRetriever, logger logger.Logger) {
+// AddRedditVideosAPI will register the various routes and their methods
+func (c *Controller) AddRedditVideosAPI(loggerHandle logger.Logger, cons redditConstructor, des redditDestructor, ret redditRetriever) {
 	rvc := &redditVideosController{
-		Logger: logger,
+		Logger: loggerHandle,
 
 		cons: cons,
 		des:  des,
@@ -25,7 +25,7 @@ func addRedditVideosAPI(router *mux.Router, cons redditConstructor, des redditDe
 	}
 
 	// TODO: Implement search / ALL
-	rvrouter := router.PathPrefix("/reddit_videos").Subrouter()
+	rvrouter := c.Router.PathPrefix("/reddit_videos").Subrouter()
 
 	// rvrouter.HandleFunc("/", rvrouter.create).Methods(http.MethodPost)
 

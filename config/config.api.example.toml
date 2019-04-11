@@ -1,6 +1,7 @@
 [API]
-    Address = ":3000"
+    Address         = ":3000"
     GracefulTimeout = 60
+    PathPrefix      = "/"
 
 [Log]
     Format  = "text"

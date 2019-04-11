@@ -12,10 +12,10 @@ import (
 	"github.com/johnwyles/vrddt-droplets/pkg/logger"
 )
 
-// addVrddtVideosAPI will register the various routes and their methods
-func addVrddtVideosAPI(router *mux.Router, cons vrddtConstructor, des vrddtDestructor, ret vrddtRetriever, lg logger.Logger) {
+// AddVrddtVideosAPI will register the various routes and their methods
+func (c *Controller) AddVrddtVideosAPI(loggerHandle logger.Logger, cons vrddtConstructor, des vrddtDestructor, ret vrddtRetriever) {
 	vvc := &vrddtVideosController{
-		Logger: lg,
+		Logger: loggerHandle,
 
 		cons: cons,
 		des:  des,
@@ -23,7 +23,7 @@ func addVrddtVideosAPI(router *mux.Router, cons vrddtConstructor, des vrddtDestr
 	}
 
 	// TODO: Implement search / ALL
-	vvrouter := router.PathPrefix("/vrddt_videos").Subrouter()
+	vvrouter := c.Router.PathPrefix("/vrddt_videos").Subrouter()
 
 	vvrouter.HandleFunc("/{id}", vvc.getByID).Methods(http.MethodGet)
 	vvrouter.HandleFunc("/{md5}", vvc.getByMD5).Methods(http.MethodGet)

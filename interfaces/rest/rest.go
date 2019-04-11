@@ -3,33 +3,29 @@ package rest
 import (
 	"net/http"
 
-	"github.com/johnwyles/vrddt-droplets/pkg/render"
-
 	"github.com/gorilla/mux"
+
 	"github.com/johnwyles/vrddt-droplets/pkg/errors"
 	"github.com/johnwyles/vrddt-droplets/pkg/logger"
+	"github.com/johnwyles/vrddt-droplets/pkg/render"
 )
 
+// Controller holds the information about the REST controller
+type Controller struct {
+	Router *mux.Router
+}
+
 // New initializes the server with routes exposing the given usecases.
-func New(
-	logger logger.Logger,
-	redditConst redditConstructor,
-	redditDest redditDestructor,
-	redditRet redditRetriever,
-	vrddtConst vrddtConstructor,
-	vrddtDest vrddtDestructor,
-	vrddtRet vrddtRetriever,
-) http.Handler {
-	// setup router with default handlers
-	router := mux.NewRouter()
-	router.NotFoundHandler = http.HandlerFunc(notFoundHandler)
-	router.MethodNotAllowedHandler = http.HandlerFunc(methodNotAllowedHandler)
+func New(loggerHandle logger.Logger) *Controller {
+	controller := &Controller{
+		Router: mux.NewRouter(),
+	}
 
-	// setup api endpoints
-	addRedditVideosAPI(router, redditConst, redditDest, redditRet, logger)
-	addVrddtVideosAPI(router, vrddtConst, vrddtDest, vrddtRet, logger)
+	// Setup router with default handlers
+	controller.Router.NotFoundHandler = http.HandlerFunc(notFoundHandler)
+	controller.Router.MethodNotAllowedHandler = http.HandlerFunc(methodNotAllowedHandler)
 
-	return router
+	return controller
 }
 
 func notFoundHandler(wr http.ResponseWriter, req *http.Request) {
