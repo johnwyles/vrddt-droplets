@@ -131,11 +131,11 @@ google.golang.org/grpc/credentials/internal
 google.golang.org/grpc/binarylog/grpc_binarylog_v1
 google.golang.org/grpc/internal/syscall
 # gopkg.in/mgo.v2 v2.0.0-20180705113604-9856a29383ce
-gopkg.in/mgo.v2
 gopkg.in/mgo.v2/bson
+gopkg.in/mgo.v2
+gopkg.in/mgo.v2/internal/json
 gopkg.in/mgo.v2/internal/sasl
 gopkg.in/mgo.v2/internal/scram
-gopkg.in/mgo.v2/internal/json
 # gopkg.in/urfave/cli.v2 v2.0.0-20180128182452-d3ae77c26ac8 => github.com/johnwyles/cli v0.0.0-0.20190208003449-3a4ded93cc73
 gopkg.in/urfave/cli.v2
 gopkg.in/urfave/cli.v2/altsrc
