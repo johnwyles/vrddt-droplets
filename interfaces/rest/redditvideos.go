@@ -14,6 +14,16 @@ import (
 	"github.com/johnwyles/vrddt-droplets/pkg/logger"
 )
 
+// redditVideosController holds all of the internal implementations of our
+// usecases
+type redditVideosController struct {
+	logger.Logger
+
+	cons redditConstructor
+	des  redditDestructor
+	ret  redditRetriever
+}
+
 // AddRedditVideosAPI will register the various routes and their methods
 func (c *Controller) AddRedditVideosAPI(loggerHandle logger.Logger, cons redditConstructor, des redditDestructor, ret redditRetriever) {
 	rvc := &redditVideosController{
@@ -52,16 +62,6 @@ func (c *Controller) AddRedditVideosAPI(loggerHandle logger.Logger, cons redditC
 	rvrouter.HandleFunc("/", rvc.getVrddtVideoByURL).Queries("url", "{url}").Methods(http.MethodGet)
 
 	// rvrouter.HandleFunc("/search", rvc.search).Methods(http.MethodGet)
-}
-
-// redditVideosController holds all of the internal implementations of our
-// usecases
-type redditVideosController struct {
-	logger.Logger
-
-	cons redditConstructor
-	des  redditDestructor
-	ret  redditRetriever
 }
 
 // // TODO: API for interacting with the queue
@@ -186,17 +186,17 @@ func (rvc *redditVideosController) getVrddtVideoByURL(wr http.ResponseWriter, re
 		redditVideo, err := rvc.ret.GetByURL(req.Context(), url)
 		if err != nil {
 			switch errors.Type(err) {
-			default:
 			case errors.TypeUnknown:
 				respondErr(wr, errors.InvalidValue("url", url))
 				return
 			case errors.TypeResourceNotFound:
+			default:
 			}
 		}
 
 		if redditVideo != nil {
 			if !redditVideo.VrddtVideoID.Valid() {
-				respondErr(wr, errors.InvalidValue("VrddtVideoID", "invalid bson id"))
+				respondErr(wr, errors.InvalidValue("VrddtVideoID", "Invalid bson id"))
 				return
 			}
 
@@ -204,9 +204,9 @@ func (rvc *redditVideosController) getVrddtVideoByURL(wr http.ResponseWriter, re
 			if err != nil {
 				switch errors.Type(errVrddt) {
 				case errors.TypeResourceNotFound:
-					rvc.Fatalf("Reddit Video found (ID: %s) but vrddt Video (ID: %s) was not", redditVideo.ID.Hex(), redditVideo.VrddtVideoID.Hex())
+					rvc.Errorf("Reddit Video found (ID: %s) but vrddt Video (ID: %s) was not", redditVideo.ID.Hex(), redditVideo.VrddtVideoID.Hex())
 				default:
-					rvc.Fatalf("Something went wrong: %s", errVrddt)
+					rvc.Errorf("Something went wrong: %s", errVrddt)
 				}
 			}
 
@@ -219,7 +219,7 @@ func (rvc *redditVideosController) getVrddtVideoByURL(wr http.ResponseWriter, re
 		redditVideo.URL = finalURL
 
 		if err = rvc.cons.Push(context.TODO(), redditVideo); err != nil {
-			rvc.Fatalf("Failed to push Reddit video to queue: %s", err)
+			rvc.Errorf("Failed to push Reddit video to queue: %s", err)
 		}
 
 		rvc.Infof("Unique Reddit video URL queued with URL of: %s", redditVideo.URL)
@@ -252,7 +252,9 @@ func (rvc *redditVideosController) getVrddtVideoByURL(wr http.ResponseWriter, re
 		for {
 			select {
 			case <-timeout:
-				rvc.Fatalf("Operation timed out at after '%d' seconds.", timeout)
+				respondErr(wr, errors.OperationTimeout("Fetching Reddit URL from database", timeoutTime))
+				rvc.Errorf("Operation timed out at after '%d' seconds.", timeoutTime)
+				return
 			case <-tick:
 				// If the Reddit URL is not found in the database yet keep checking
 				temporaryRedditVideo, err := rvc.ret.GetByURL(context.TODO(), redditVideo.URL)
@@ -271,13 +273,13 @@ func (rvc *redditVideosController) getVrddtVideoByURL(wr http.ResponseWriter, re
 				if errVrddt != nil {
 					switch errors.Type(errVrddt) {
 					case errors.TypeResourceNotFound:
-						rvc.Fatalf("Reddit video found (ID: %s) but associated vrddt video (ID: %s) was not", temporaryRedditVideo.ID.Hex(), temporaryRedditVideo.VrddtVideoID.Hex())
+						rvc.Errorf("Reddit video found (ID: %s) but associated vrddt video (ID: %s) was not", temporaryRedditVideo.ID.Hex(), temporaryRedditVideo.VrddtVideoID.Hex())
 					default:
-						rvc.Fatalf("Something went wrong: %s", errVrddt)
+						rvc.Errorf("Something went wrong: %s", errVrddt)
 					}
 				}
 
-				rvc.Infof("Unique url created new vrddt video: %#v", vrddtVideo)
+				rvc.Infof("Unique URL created new vrddt video: %#v", vrddtVideo)
 				respond(wr, http.StatusOK, vrddtVideo)
 				return
 			}

@@ -25,6 +25,14 @@ var loggerHandle logger.Logger
 // services will be a refer to our global services avaiable to the subcommands
 var services = &Services{}
 
+// afterResources will execute after Action() to cleanup
+func afterResources(cfg *config.Config) cli.AfterFunc {
+	return func(cliContext *cli.Context) (err error) {
+		// Cleanup connections
+		return
+	}
+}
+
 // allCommands are all of the commands we are able to run
 func allCommands(cfg *config.Config) []*cli.Command {
 	return []*cli.Command{
@@ -202,14 +210,6 @@ func rootAction(cfg *config.Config) cli.ActionFunc {
 	return func(cliContext *cli.Context) (err error) {
 		cli.ShowAppHelp(cliContext)
 		return fmt.Errorf("No sub-command specified")
-	}
-}
-
-// afterResources will execute after Action() to cleanup
-func afterResources(cfg *config.Config) cli.AfterFunc {
-	return func(cliContext *cli.Context) (err error) {
-		// Cleanup connections
-		return
 	}
 }
 

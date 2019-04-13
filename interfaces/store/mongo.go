@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"fmt"
+	"github.com/johnwyles/vrddt-droplets/pkg/errors"
 
 	mgo "gopkg.in/mgo.v2"
 
@@ -89,11 +90,7 @@ func (m *mongoSession) DeleteRedditVideos(ctx context.Context, selector Selector
 		return err
 	}
 
-	if err = redditVideos.Remove(selector); err != nil {
-		return err
-	}
-
-	return
+	return redditVideos.Remove(selector)
 }
 
 // DeleteVrddtVideo is an alias to the same function but plural becaause the
@@ -106,14 +103,10 @@ func (m *mongoSession) DeleteVrddtVideo(ctx context.Context, selector Selector) 
 func (m *mongoSession) DeleteVrddtVideos(ctx context.Context, selector Selector) (err error) {
 	vrddtVideosCollection, err := m.vrddtVideosCollection()
 	if err != nil {
-		return err
+		return
 	}
 
-	if err = vrddtVideosCollection.Remove(selector); err != nil {
-		return err
-	}
-
-	return
+	return vrddtVideosCollection.Remove(selector)
 }
 
 // GetRedditVideo will return a Reddit video from the database if the passed in
@@ -125,7 +118,12 @@ func (m *mongoSession) GetRedditVideo(ctx context.Context, selector Selector) (r
 	}
 
 	redditVideo = &domain.RedditVideo{}
+
 	err = redditVideosCollection.Find(selector).One(redditVideo)
+	// Turn error into a ResourceNotFound error type
+	if err == mgo.ErrNotFound {
+		return nil, errors.ResourceNotFound("RedditVideo", fmt.Sprintf("%#v", selector))
+	}
 
 	return
 }
@@ -154,7 +152,12 @@ func (m *mongoSession) GetVrddtVideo(ctx context.Context, selector Selector) (vr
 	}
 
 	vrddtVideo = &domain.VrddtVideo{}
+
 	err = vrddtVideosCollection.Find(selector).One(vrddtVideo)
+	// Turn error into a ResourceNotFound error type
+	if err == mgo.ErrNotFound {
+		return nil, errors.ResourceNotFound("VrddtVideo", fmt.Sprintf("%#v", selector))
+	}
 
 	return
 }
@@ -187,6 +190,7 @@ func (m *mongoSession) Init(ctx context.Context) (err error) {
 	if err != nil {
 		return
 	}
+
 	m.session.SetMode(mgo.Monotonic, true)
 	m.session.SetSafe(&mgo.Safe{})
 
@@ -196,7 +200,7 @@ func (m *mongoSession) Init(ctx context.Context) (err error) {
 // redditVideosCollection returns the collection of Reddit videos previously processed
 func (m *mongoSession) redditVideosCollection() (redditVideosCollection *mgo.Collection, err error) {
 	redditVideosCollection = m.session.DB(m.database).C(m.redditVideosCollectionName)
-	if err = redditVideosCollection.EnsureIndex(
+	err = redditVideosCollection.EnsureIndex(
 		mgo.Index{
 			Key:        []string{"reddit_url"},
 			Unique:     true,
@@ -204,17 +208,15 @@ func (m *mongoSession) redditVideosCollection() (redditVideosCollection *mgo.Col
 			Background: true,
 			Sparse:     true,
 		},
-	); err != nil {
-		return nil, err
-	}
+	)
 
-	return redditVideosCollection, nil
+	return
 }
 
 // vrddtVideosCollection returns the collection of vrddt videos previously processed
 func (m *mongoSession) vrddtVideosCollection() (vrddtVideosCollection *mgo.Collection, err error) {
 	vrddtVideosCollection = m.session.DB(m.database).C(m.vrddtVideosCollectionName)
-	vrddtVideosCollection.EnsureIndex(
+	err = vrddtVideosCollection.EnsureIndex(
 		mgo.Index{
 			Key:        []string{"md5"},
 			Unique:     true,
@@ -224,5 +226,5 @@ func (m *mongoSession) vrddtVideosCollection() (vrddtVideosCollection *mgo.Colle
 		},
 	)
 
-	return vrddtVideosCollection, nil
+	return
 }

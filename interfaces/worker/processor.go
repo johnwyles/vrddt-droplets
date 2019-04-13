@@ -57,6 +57,7 @@ func (p *processor) DoWork(ctx context.Context) (err error) {
 		return fmt.Errorf("The was no element of work to perform converter work on")
 	}
 
+	// TODO: Implement other video types
 	switch p.work.(type) {
 	case *domain.RedditVideo:
 		p.log.Debugf("Performing work on reddit video: %#v", p.work)

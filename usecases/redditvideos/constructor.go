@@ -11,6 +11,14 @@ import (
 	"github.com/johnwyles/vrddt-droplets/pkg/logger"
 )
 
+// Constructor provides functions for reddit video creation operations.
+type Constructor struct {
+	logger.Logger
+
+	queue queue.Queue
+	store store.Store
+}
+
 // NewConstructor initializes a Creation service object.
 func NewConstructor(lg logger.Logger, queue queue.Queue, store store.Store) *Constructor {
 	return &Constructor{
@@ -18,14 +26,6 @@ func NewConstructor(lg logger.Logger, queue queue.Queue, store store.Store) *Con
 		queue:  queue,
 		store:  store,
 	}
-}
-
-// Constructor provides functions for reddit video creation operations.
-type Constructor struct {
-	logger.Logger
-
-	queue queue.Queue
-	store store.Store
 }
 
 // Create creates a new reddit video in the system using the supplied

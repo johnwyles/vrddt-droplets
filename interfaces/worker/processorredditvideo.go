@@ -4,10 +4,9 @@ import (
 	"context"
 	"crypto/md5"
 	"fmt"
+	"github.com/johnwyles/vrddt-droplets/pkg/errors"
 	"io"
 	"os"
-
-	mgo "gopkg.in/mgo.v2"
 
 	"github.com/johnwyles/vrddt-droplets/domain"
 	"github.com/johnwyles/vrddt-droplets/interfaces/store"
@@ -30,6 +29,31 @@ const (
 
 // TODO: Fix comments
 
+// checkIfRedditURLExists will look in the database to see if the Reddit URL
+// already exists or not.  If it does exist it will return true otherwise false
+func (p *processor) checkIfRedditURLExists(ctx context.Context, redditVideo *domain.RedditVideo) (exists bool, err error) {
+	// Let's also see if the Reddit URL has been seen before
+	_, err = p.store.GetRedditVideo(
+		ctx,
+		store.Selector{
+			"url": redditVideo.URL,
+		},
+	)
+	if err != nil {
+		switch errors.Type(err) {
+		case errors.TypeResourceNotFound:
+			// We do not care if a Reddit video was not found
+			err = nil
+		default:
+			return
+		}
+	} else {
+		exists = true
+	}
+
+	return
+}
+
 // checkIfVrddtMD5Exists will look to see if the processed video from the
 // unique Reddit URL that was given matches a vrddt video we have already
 // stored and if so make the association
@@ -43,41 +67,20 @@ func (p *processor) checkIfVrddtMD5Exists(ctx context.Context, outputMD5Sum []by
 			"md5": outputMD5Sum,
 		},
 	)
-	switch err {
-	case nil:
+	if err != nil {
+		switch errors.Type(err) {
+		case errors.TypeResourceNotFound:
+			// We do not care if a vrddt video was not found
+			err = nil
+		default:
+			return
+		}
+	} else {
 		redditVideo.VrddtVideoID = temporaryVrddtVideo.ID
 		if err = p.store.CreateRedditVideo(ctx, redditVideo); err != nil {
 			return
 		}
 		exists = true
-		return
-	case mgo.ErrNotFound:
-		// We do not care if a vrddt video was not found
-		err = nil
-	default:
-	}
-
-	return
-}
-
-// checkIfRedditURLExists will look in the database to see if the Reddit URL
-// already exists or not.  If it does exist it will return true otherwise false
-func (p *processor) checkIfRedditURLExists(ctx context.Context, redditVideo *domain.RedditVideo) (exists bool, err error) {
-	// Let's also see if the Reddit URL has been seen before
-	_, err = p.store.GetRedditVideo(
-		ctx,
-		store.Selector{
-			"url": redditVideo.URL,
-		},
-	)
-	switch err {
-	case nil:
-		exists = true
-	case mgo.ErrNotFound:
-		// We do not care if a Reddit video was not found
-		err = nil
-	default:
-		return
 	}
 
 	return
@@ -95,7 +98,7 @@ func (p *processor) doWorkRedditVideo(ctx context.Context) (err error) {
 	if p.work.(*domain.RedditVideo).URL != "" {
 		redditVideo.URL = p.work.(*domain.RedditVideo).URL
 	} else {
-		return fmt.Errorf("work item was a reddit video but did not have the URL field set")
+		return fmt.Errorf("Work item was a Reddit video but did not have the URL field set")
 	}
 
 	// We shouldn't need this if all the entries to the queue are done
@@ -130,19 +133,21 @@ func (p *processor) doWorkRedditVideo(ctx context.Context) (err error) {
 			"video_url": redditVideo.VideoURL,
 		},
 	)
-	switch err {
-	case nil:
+	if err != nil {
+		switch errors.Type(err) {
+		case errors.TypeResourceNotFound:
+			// This simply means a duplicate was not found in the database (i.e.
+			// we have a unique Reddit URL)
+			p.log.Debugf("Reddit audio and/or video URLs is unique: %s", redditVideo.URL)
+		default:
+			// Something unexpected happened
+			return
+		}
+	} else {
 		redditVideo.VrddtVideoID = temporaryRedditVideo.VrddtVideoID
 		if createErr := p.store.CreateRedditVideo(ctx, redditVideo); createErr != nil {
 			return createErr
 		}
-	case mgo.ErrNotFound:
-		// This simply means a duplicate was not found in the database (i.e.
-		// we have a unique Reddit URL)
-		p.log.Debugf("Reddit audio and/or video URLs is unique: %s", redditVideo.URL)
-	default:
-		// Something unexpected happened
-		return
 	}
 
 	if err = redditVideo.Download(); err != nil {

@@ -15,7 +15,7 @@ import (
 	"github.com/johnwyles/vrddt-droplets/pkg/logger"
 )
 
-// TODO: Figure out context
+// TODO: Are we using context correctly?
 
 // gcs contains all the information about a GCS client
 type gcs struct {

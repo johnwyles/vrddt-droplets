@@ -12,6 +12,14 @@ import (
 	"github.com/johnwyles/vrddt-droplets/pkg/logger"
 )
 
+type vrddtVideosController struct {
+	logger.Logger
+
+	cons vrddtConstructor
+	des  vrddtDestructor
+	ret  vrddtRetriever
+}
+
 // AddVrddtVideosAPI will register the various routes and their methods
 func (c *Controller) AddVrddtVideosAPI(loggerHandle logger.Logger, cons vrddtConstructor, des vrddtDestructor, ret vrddtRetriever) {
 	vvc := &vrddtVideosController{
@@ -32,14 +40,6 @@ func (c *Controller) AddVrddtVideosAPI(loggerHandle logger.Logger, cons vrddtCon
 	// vvrouter.HandleFunc("/", vvc.search).Methods(http.MethodGet)
 	// vvrouter.HandleFunc("/{id}", vvc.delete).Methods(http.MethodDelete)
 	// vvrouter.HandleFunc("/", vvc.create).Methods(http.MethodPost)
-}
-
-type vrddtVideosController struct {
-	logger.Logger
-
-	cons vrddtConstructor
-	des  vrddtDestructor
-	ret  vrddtRetriever
 }
 
 // func (vvc *vrddtVideosController) create(wr http.ResponseWriter, req *http.Request) {

@@ -10,60 +10,63 @@ import (
 	"github.com/johnwyles/vrddt-droplets/pkg/logger"
 )
 
+// Controller holds the information about the web controller
+type Controller struct {
+	Router *mux.Router
+}
+
 // New initializes a new webapp server.
-func New(lg logger.Logger, cfg Config) (http.Handler, error) {
-	tpl, err := initTemplate(lg, "", cfg.TemplateDir)
+func New(loggerHandle logger.Logger) (controller *Controller, err error) {
+	controller = &Controller{
+		Router: mux.NewRouter(),
+	}
+
+	tpl, err := initTemplate(loggerHandle, "", "web/templates")
 	if err != nil {
-		return nil, err
+		return
 	}
 
 	app := &app{
 		render: func(wr http.ResponseWriter, tplName string, data interface{}) {
 			if err := tpl.ExecuteTemplate(wr, tplName, data); err != nil {
-				lg.Errorf("failed to render template '%s': %+v", tplName, err)
+				loggerHandle.Errorf("Failed to render template '%s': %+v", tplName, err)
 			}
 		},
 	}
 
-	fsServer := newSafeFileSystemServer(lg, cfg.StaticDir)
+	// Static file serving
+	fsServer := newSafeFileSystemServer(loggerHandle, "web/static")
+	controller.Router.PathPrefix("/static").Handler(http.StripPrefix("/static", fsServer))
+	controller.Router.Handle("/favicon.ico", fsServer)
 
-	router := mux.NewRouter()
-	router.PathPrefix("/static").Handler(http.StripPrefix("/static", fsServer))
-	router.Handle("/favicon.ico", fsServer)
+	// Root route
+	controller.Router.HandleFunc("/", app.indexHandler)
 
-	// web app routes
-	router.HandleFunc("/", app.indexHandler)
-
-	return router, nil
+	return
 }
 
-// Config represents server configuration.
-type Config struct {
-	TemplateDir string
-	StaticDir   string
-}
-
-func initTemplate(lg logger.Logger, name, path string) (*template.Template, error) {
+func initTemplate(loggerHandle logger.Logger, name string, path string) (tpl *template.Template, err error) {
 	apath, err := filepath.Abs(path)
 	if err != nil {
-		return nil, err
+		return
 	}
 
 	files, err := ioutil.ReadDir(apath)
 	if err != nil {
-		return nil, err
+		return
 	}
 
-	lg.Infof("loading templates from '%s'...", path)
-	tpl := template.New(name)
+	loggerHandle.Infof("Loading templates from '%s'...", path)
+	tpl = template.New(name)
 	for _, f := range files {
 		if f.IsDir() {
 			continue
 		}
+
 		fp := filepath.Join(apath, f.Name())
-		lg.Debugf("parsing template file '%s'", f.Name())
+		loggerHandle.Debugf("Parsing template file '%s'", f.Name())
 		tpl.New(f.Name()).ParseFiles(fp)
 	}
 
-	return tpl, nil
+	return
 }

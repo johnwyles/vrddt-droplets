@@ -1,0 +1,8 @@
+[Log]
+    Format = "text"
+    Level  = "debug"
+
+[Web]
+    Address         = ":8080"
+    GracefulTimeout = 60
+    PathPrefix      = "/"

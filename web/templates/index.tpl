@@ -10,25 +10,23 @@
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO"
     crossorigin="anonymous">
 
-  <title>Droplets</title>
+  <title>vrddt Web Server</title>
 </head>
 
 <body>
   <div class="container">
     <nav class="navbar navbar-light bg-light">
        <a class="navbar-brand">
-          <img src="static/favicon.ico" width="30" height="30" class="d-inline-block align-top" alt="">
-          Droplets
+          vrddt Web Server
        </a>
-       <form class="form-inline" action="search" method="GET">
-         <input class="form-control mr-sm-2" type="search" name="query" placeholder="Search" aria-label="Search">
-         <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
-       </form>
     </nav>
-
-    <div class="container">
-      <h1>Welcome </h1>
-    </div>
+  </div>
+  <div class="container">
+    <h1>Enter Reddit URL</h1>
+    <form class="form-inline" action="convert" method="GET">
+      <input class="form-control mr-sm-2" type="text" name="url" placeholder="https://" aria-label="Convert">
+      <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Convert</button>
+    </form>
   </div>
   <!-- Optional JavaScript -->
   <!-- jQuery first, then Popper.js, then Bootstrap JS -->

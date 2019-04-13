@@ -4,4 +4,5 @@ package config
 type APIConfig struct {
 	Address         string
 	GracefulTimeout int
+	PathPrefix      string
 }

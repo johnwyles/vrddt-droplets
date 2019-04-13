@@ -1,22 +1,23 @@
 package main
 
 import (
-	"context"
 	"os"
 	"time"
 
+	// "github.com/gorilla/mux"
 	cli "gopkg.in/urfave/cli.v2"
 	"gopkg.in/urfave/cli.v2/altsrc"
 
 	"github.com/johnwyles/vrddt-droplets/interfaces/config"
-	"github.com/johnwyles/vrddt-droplets/interfaces/queue"
-	"github.com/johnwyles/vrddt-droplets/interfaces/rest"
-	"github.com/johnwyles/vrddt-droplets/interfaces/store"
-	"github.com/johnwyles/vrddt-droplets/pkg/graceful"
 	"github.com/johnwyles/vrddt-droplets/pkg/logger"
+
+	// "github.com/johnwyles/vrddt-droplets/interfaces/queue"
+	// "github.com/johnwyles/vrddt-droplets/interfaces/store"
+	"github.com/johnwyles/vrddt-droplets/interfaces/web"
+	"github.com/johnwyles/vrddt-droplets/pkg/graceful"
 	"github.com/johnwyles/vrddt-droplets/pkg/middlewares"
-	"github.com/johnwyles/vrddt-droplets/usecases/redditvideos"
-	"github.com/johnwyles/vrddt-droplets/usecases/vrddtvideos"
+	// "github.com/johnwyles/vrddt-droplets/usecases/redditvideos"
+	// "github.com/johnwyles/vrddt-droplets/usecases/vrddtvideos"
 )
 
 // loggerHandle is the current logger facility
@@ -27,37 +28,14 @@ func main() {
 	// somewhat ugly but necessary if we want to override configuration file
 	// options with the arguments on the command line
 	cfg := &config.Config{
-		API: config.APIConfig{
-			Address:         ":3000",
-			GracefulTimeout: 30,
-			PathPrefix:      "/",
-		},
 		Log: config.LogConfig{
 			Format: "text",
 			Level:  "debug",
 		},
-		Queue: config.QueueConfig{
-			Memory: config.QueueMemoryConfig{
-				MaxSize: 100000,
-			},
-			RabbitMQ: config.QueueRabbitMQConfig{
-				BindingKeyName: "vrddt-bindingkey-converter",
-				ExchangeName:   "vrddt-exchange-converter",
-				QueueName:      "vrddt-queue-converter",
-				URI:            "amqp://admin:password@localhost:5672",
-			},
-			Type: config.QueueConfigRabbitMQ,
-		},
-		Store: config.StoreConfig{
-			Memory: config.StoreMemoryConfig{
-				MaxSize: 100000,
-			},
-			Mongo: config.StoreMongoConfig{
-				RedditVideosCollectionName: "reddit_videos",
-				URI:                        "mongodb://admin:password@localhost:27017/vrddt",
-				VrddtVideosCollectionName:  "vrddt_videos",
-			},
-			Type: config.StoreConfigMongo,
+		Web: config.WebConfig{
+			Address:         ":8080",
+			GracefulTimeout: 30,
+			PathPrefix:      "/",
 		},
 	}
 
@@ -73,21 +51,21 @@ func main() {
 		altsrc.NewStringFlag(
 			&cli.StringFlag{
 				Aliases:     []string{"a"},
-				Destination: &cfg.API.Address,
-				EnvVars:     []string{"VRDDT_API_ADDRESS"},
-				Name:        "API.Address",
-				Usage:       "API listening address",
-				Value:       cfg.API.Address,
+				Destination: &cfg.Web.Address,
+				EnvVars:     []string{"VRDDT_WEB_ADDRESS"},
+				Name:        "Web.Address",
+				Usage:       "Web listening address",
+				Value:       cfg.Web.Address,
 			},
 		),
 		altsrc.NewIntFlag(
 			&cli.IntFlag{
 				Aliases:     []string{"t"},
-				Destination: &cfg.API.GracefulTimeout,
-				EnvVars:     []string{"VRDDT_API_GRACEFUL_TIMEOUT"},
-				Name:        "API.GracefulTimeout",
-				Usage:       "API graceful timeout (in seconds)",
-				Value:       cfg.API.GracefulTimeout,
+				Destination: &cfg.Web.GracefulTimeout,
+				EnvVars:     []string{"VRDDT_WEB_GRACEFUL_TIMEOUT"},
+				Name:        "Web.GracefulTimeout",
+				Usage:       "Web graceful timeout (in seconds)",
+				Value:       cfg.Web.GracefulTimeout,
 			},
 		),
 		altsrc.NewStringFlag(
@@ -187,8 +165,8 @@ func main() {
 		),
 		Prepare: prepareResources(cfg),
 		Flags:   flags,
-		Name:    "vrddt-api",
-		Usage:   "vrddt API service",
+		Name:    "vrddt-web",
+		Usage:   "vrddt Web service",
 		Version: "v0.0.1",
 	}
 
@@ -216,46 +194,46 @@ func rootAction(cfg *config.Config) cli.ActionFunc {
 		// Initalize connections
 		loggerHandle = logger.New(os.Stderr, cfg.Log.Level, cfg.Log.Format)
 
-		q, err := queue.RabbitMQ(&cfg.Queue.RabbitMQ, loggerHandle)
+		// q, err := queue.RabbitMQ(&cfg.Queue.RabbitMQ, loggerHandle)
+		// if err != nil {
+		// 	return
+		// }
+
+		// // Setup the store
+		// str, err := store.Mongo(&cfg.Store.Mongo, loggerHandle)
+		// if err != nil {
+		// 	return
+		// }
+
+		// Get the web controller
+		webController, err := web.New(loggerHandle)
 		if err != nil {
 			return
 		}
-		q.Init(context.TODO())
 
-		// Setup the store
-		str, err := store.Mongo(&cfg.Store.Mongo, loggerHandle)
-		if err != nil {
-			return
-		}
-		str.Init(context.TODO())
+		// // Setup web endpoints for Reddit videos
+		// rvc := redditvideos.NewConstructor(loggerHandle, q, str)
+		// rvd := redditvideos.NewDestructor(loggerHandle, q, str)
+		// rvr := redditvideos.NewRetriever(loggerHandle, str)
+		// webController.AddRedditVideosAPI(loggerHandle, rvc, rvd, rvr)
 
-		// Get the REST controller
-		restController := rest.New(loggerHandle)
-
-		// Setup API endpoints for Reddit videos
-		rvc := redditvideos.NewConstructor(loggerHandle, q, str)
-		rvd := redditvideos.NewDestructor(loggerHandle, q, str)
-		rvr := redditvideos.NewRetriever(loggerHandle, str)
-		restController.AddRedditVideosAPI(loggerHandle, rvc, rvd, rvr)
-
-		// Setup API endpoints for vrddt videos
-		vvc := vrddtvideos.NewConstructor(loggerHandle, str)
-		vvd := vrddtvideos.NewDestructor(loggerHandle, str)
-		vvr := vrddtvideos.NewRetriever(loggerHandle, str)
-		restController.AddVrddtVideosAPI(loggerHandle, vvc, vvd, vvr)
+		// // Setup API endpoints for vrddt videos
+		// vvc := vrddtvideos.NewConstructor(loggerHandle, str)
+		// vvd := vrddtvideos.NewDestructor(loggerHandle, str)
+		// vvr := vrddtvideos.NewRetriever(loggerHandle, str)
+		// webController.AddVrddtVideosAPI(loggerHandle, vvc, vvd, vvr)
 
 		// Setup API middleware
-		handler := middlewares.WithRequestLogging(loggerHandle, restController.Router)
+		handler := middlewares.WithRequestLogging(loggerHandle, webController.Router)
 		handler = middlewares.WithRecovery(loggerHandle, handler)
 
-		// Setup HTTP server
-		srv := graceful.NewServer(handler, time.Duration(cfg.API.GracefulTimeout)*time.Second, os.Interrupt)
+		srv := graceful.NewServer(handler, time.Duration(cfg.Web.GracefulTimeout)*time.Second, os.Interrupt)
 		srv.Log = loggerHandle.Errorf
-		srv.Addr = cfg.API.Address
+		srv.Addr = cfg.Web.Address
 
-		loggerHandle.Infof("API is listening as: %s", cfg.API.Address)
+		loggerHandle.Infof("Web is listening as: %s", cfg.Web.Address)
 		if err := srv.ListenAndServe(); err != nil {
-			loggerHandle.Fatalf("API server exited: %s", err)
+			loggerHandle.Fatalf("Web server exited: %s", err)
 		}
 
 		return

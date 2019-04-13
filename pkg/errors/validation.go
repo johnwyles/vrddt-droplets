@@ -5,8 +5,8 @@ import "net/http"
 // Common validation error type codes.
 const (
 	TypeInvalidRequest = "InvalidRequest"
-	TypeMissingField   = "MissingField"
 	TypeInvalidValue   = "InvalidValue"
+	TypeMissingField   = "MissingField"
 )
 
 // Validation returns an error that can be used to represent an invalid request.

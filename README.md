@@ -20,6 +20,10 @@ TODO
             - Authorization / OAuth
             - Frontend JS to use REST API
     - INTERNALS
+        - Refactor to return errors.XXX instead of fmt.Errorf
         - Makefile is broken
         - Dockerize
         - Add S3 storage support
+        - Implement other video types for video processor
+            - Breakout Upload feature and vrddt video association so it can be
+            used again by other types.

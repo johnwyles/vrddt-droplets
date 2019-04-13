@@ -26,7 +26,7 @@ type safeFileSystem struct {
 func (sfs safeFileSystem) Open(path string) (http.File, error) {
 	f, err := sfs.fs.Open(path)
 	if err != nil {
-		sfs.Warnf("failed to open file '%s': %v", path, err)
+		sfs.Warnf("Failed to open file '%s': %v", path, err)
 		return nil, err
 	}
 
@@ -35,7 +35,7 @@ func (sfs safeFileSystem) Open(path string) (http.File, error) {
 		return nil, err
 	}
 	if stat.IsDir() {
-		sfs.Warnf("path '%s' is a directory, rejecting static path request", path)
+		sfs.Warnf("Path '%s' is a directory, rejecting static path request", path)
 		return nil, os.ErrNotExist
 	}
 

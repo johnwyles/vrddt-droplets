@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"time"
 
-	mgo "gopkg.in/mgo.v2"
 	cli "gopkg.in/urfave/cli.v2"
 
 	"github.com/johnwyles/vrddt-droplets/domain"
 	"github.com/johnwyles/vrddt-droplets/interfaces/config"
+	"github.com/johnwyles/vrddt-droplets/pkg/errors"
 	"github.com/johnwyles/vrddt-droplets/usecases/redditvideos"
 	"github.com/johnwyles/vrddt-droplets/usecases/vrddtvideos"
 )
@@ -62,6 +62,11 @@ func beforeProcessWithInternalServices(cliContext *cli.Context) (err error) {
 		err = fmt.Errorf("A Reddit URL was not given")
 	}
 
+	// TODO: Context
+	ctx := context.TODO()
+	services.Store.Init(ctx)
+	services.Queue.Init(ctx)
+
 	return
 }
 
@@ -105,24 +110,30 @@ func processWithInternalServices(cliContext *cli.Context) (err error) {
 
 	// Check if this already exists in the database
 	dbRedditVideo, err := redditVideoRetriever.GetByURL(context.TODO(), redditVideo.URL)
-	switch err {
-	case nil:
+	if err != nil {
+		switch errors.Type(err) {
+		case errors.TypeResourceNotFound:
+			// If the record isn't found then ignore the error
+			err = nil
+		default:
+			return
+		}
+	} else {
 		loggerHandle.Debugf("dbRedditVideo: %#v", dbRedditVideo)
 		dbVrddtVideo, vrddtErr := redditVideoRetriever.GetByID(context.TODO(), dbRedditVideo.VrddtVideoID)
-		switch vrddtErr {
-		case nil:
+		if vrddtErr != nil {
+			switch errors.Type(err) {
+			case errors.TypeResourceNotFound:
+				return errors.ResourceNotFound("vrddt Video", dbRedditVideo.VrddtVideoID.Hex())
+			default:
+				return vrddtErr
+			}
+		} else {
 			msg := fmt.Sprintf("vrddt Video Found: %#v", dbVrddtVideo.URL)
 			loggerHandle.Infof(msg)
 			fmt.Printf("%s\n", msg)
-			return nil
-		case mgo.ErrNotFound:
-			return fmt.Errorf("Reddit Video found (ID: %s) but vrddt Video (ID: %s) was not", redditVideo.ID.Hex(), dbRedditVideo.VrddtVideoID.Hex())
-		default:
-			return vrddtErr
+			return
 		}
-	case mgo.ErrNotFound:
-	default:
-		return fmt.Errorf("Something went wrong: %s", err)
 	}
 
 	time.Sleep(time.Millisecond * 100)
@@ -140,28 +151,34 @@ func processWithInternalServices(cliContext *cli.Context) (err error) {
 	for {
 		select {
 		case <-timeout:
-			return fmt.Errorf("Operation timed out")
+			return errors.OperationTimeout("vrddt Video Processor", timeoutTime)
 		case <-tick:
 			// If the Reddit URL is not found in the database yet keep checking
 			temporaryRedditVideo, err := redditVideoRetriever.GetByURL(context.TODO(), redditVideo.URL)
-			switch err {
-			case nil:
+			if err != nil {
+				switch errors.Type(err) {
+				case errors.TypeResourceNotFound:
+					// If the record is not found yet ignore and continue
+					err = nil
+					continue
+				default:
+					return err
+				}
+			} else {
 				vrddtVideo, errVrddt := vrddtVideoRetriever.GetByID(context.TODO(), temporaryRedditVideo.VrddtVideoID)
-				switch errVrddt {
-				case nil:
+				if errVrddt != nil {
+					switch errors.Type(err) {
+					case errors.TypeResourceNotFound:
+						return errors.ResourceNotFound("vrddt Video", temporaryRedditVideo.VrddtVideoID.Hex())
+					default:
+						return errVrddt
+					}
+				} else {
 					msg := fmt.Sprintf("vrddt Video Created: %#v", vrddtVideo.URL)
 					loggerHandle.Infof(msg)
 					fmt.Printf("%s\n", msg)
 					return nil
-				case mgo.ErrNotFound:
-					return fmt.Errorf("Reddit Video found (ID: %s) but vrddt Video (ID: %s) was not", temporaryRedditVideo.ID.Hex(), temporaryRedditVideo.VrddtVideoID.Hex())
-				default:
-					return fmt.Errorf("Something went wrong: %s", errVrddt)
 				}
-			case mgo.ErrNotFound:
-				continue
-			default:
-				return fmt.Errorf("Something went wrong: %s", err)
 			}
 		}
 	}
