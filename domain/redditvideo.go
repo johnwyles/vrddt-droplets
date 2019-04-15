@@ -43,6 +43,10 @@ var (
 		".redditstatic.com",
 	}
 
+	// RedditDomainURLPrefix will be what to prepend to arbitrary URIs that
+	// come in by a request that we will attempt to locate a valid Reddit URL
+	RedditDomainURLPrefix = "https://reddit.com"
+
 	// TemporaryAudioFilePrefix is the file prefix for the file that will hold
 	// the contents of the audio downloaded
 	TemporaryAudioFilePrefix = "vrddt-input-reddit-audio*.mp4"

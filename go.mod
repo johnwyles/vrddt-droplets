@@ -10,6 +10,7 @@ require (
 	github.com/gorilla/mux v1.7.0
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/peter-jozsa/jsonpath v0.0.0-20180904092139-e43d4062dda8
+	github.com/rs/cors v1.6.0
 	github.com/sirupsen/logrus v1.4.0
 	github.com/streadway/amqp v0.0.0-20190312002841-61ee40d2027b
 	github.com/stretchr/testify v1.3.0 // indirect

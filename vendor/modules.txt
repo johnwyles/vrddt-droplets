@@ -27,6 +27,8 @@ github.com/hashicorp/golang-lru/simplelru
 github.com/konsorten/go-windows-terminal-sequences
 # github.com/peter-jozsa/jsonpath v0.0.0-20180904092139-e43d4062dda8
 github.com/peter-jozsa/jsonpath
+# github.com/rs/cors v1.6.0
+github.com/rs/cors
 # github.com/sirupsen/logrus v1.4.0
 github.com/sirupsen/logrus
 # github.com/streadway/amqp v0.0.0-20190312002841-61ee40d2027b

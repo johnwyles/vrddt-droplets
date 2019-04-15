@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/rs/cors"
 	cli "gopkg.in/urfave/cli.v2"
 	"gopkg.in/urfave/cli.v2/altsrc"
 
@@ -242,11 +243,16 @@ func rootAction(cfg *config.Config) cli.ActionFunc {
 		vvc := vrddtvideos.NewConstructor(loggerHandle, str)
 		vvd := vrddtvideos.NewDestructor(loggerHandle, str)
 		vvr := vrddtvideos.NewRetriever(loggerHandle, str)
-		restController.AddVrddtVideosAPI(loggerHandle, vvc, vvd, vvr)
+		restController.AddVrddtVideosAPI(loggerHandle, vvc, vvd, vvr, rvc, rvr)
 
 		// Setup API middleware
 		handler := middlewares.WithRequestLogging(loggerHandle, restController.Router)
 		handler = middlewares.WithRecovery(loggerHandle, handler)
+		co := cors.New(cors.Options{
+			AllowedOrigins: []string{"*"},
+			AllowedMethods: []string{"GET"},
+		})
+		handler = co.Handler(handler)
 
 		// Setup HTTP server
 		srv := graceful.NewServer(handler, time.Duration(cfg.API.GracefulTimeout)*time.Second, os.Interrupt)

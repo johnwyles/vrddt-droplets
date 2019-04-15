@@ -2,6 +2,7 @@ package rest
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -48,18 +49,11 @@ func (c *Controller) AddRedditVideosAPI(loggerHandle logger.Logger, cons redditC
 	rvrouter.HandleFunc("/{id:[0-9a-fA-F]+}", rvc.getByID).Methods(http.MethodGet)
 	rvrouter.HandleFunc("/{id:[0-9a-fA-F]+}/vrddt_video", rvc.getVrddtVideoByID).Methods(http.MethodGet)
 
-	// If we pass the query parameter "url" in we will return a vrddt video URL
-	// to content generated. The follow scenarios can occur:
-	//   - Check the database to see if this reddit URL has been seen before
-	//     and if it has return the vrddt video URL for the content we created
-	//     previously
-	//   - Database does not have the Reddit URL so it is unique and will
-	//     enqueue the URL in the queue
-	//     - A worker will perform all the conversion and update the database
-	//     - This process will continuously check the database for Reddit URL to
-	//       appear and return the generated vrddt video URL
-	//   - An invalid URL or error was supplied so return an error response
-	rvrouter.HandleFunc("/", rvc.getVrddtVideoByURL).Queries("url", "{url}").Methods(http.MethodGet)
+	// If none of the paths are found from the above we should try to catch all
+	// URI requests to see if they are a valid Reddit URI
+	// c.Router.HandleFunc("/{uri:.*}", rvc.getVrddtVideoByURIPath).Methods(http.MethodGet)
+
+	rvrouter.HandleFunc("/", rvc.getByRedditURL).Queries("url", "{url}").Methods(http.MethodGet)
 
 	// rvrouter.HandleFunc("/search", rvc.search).Methods(http.MethodGet)
 }
@@ -133,6 +127,7 @@ func (rvc *redditVideosController) delete(wr http.ResponseWriter, req *http.Requ
 	return
 }
 
+// getByID will get the Reddit video by ID
 func (rvc *redditVideosController) getByID(wr http.ResponseWriter, req *http.Request) {
 	if id, ok := mux.Vars(req)["id"]; ok {
 		bsonID := bson.ObjectIdHex(id)
@@ -143,6 +138,7 @@ func (rvc *redditVideosController) getByID(wr http.ResponseWriter, req *http.Req
 		}
 
 		respond(wr, http.StatusOK, redditVideo)
+
 		return
 	}
 
@@ -151,31 +147,9 @@ func (rvc *redditVideosController) getByID(wr http.ResponseWriter, req *http.Req
 	return
 }
 
-func (rvc *redditVideosController) getVrddtVideoByID(wr http.ResponseWriter, req *http.Request) {
-	if id, ok := mux.Vars(req)["id"]; ok {
-		bsonID := bson.ObjectId(id)
-		redditVideo, err := rvc.ret.GetByID(req.Context(), bsonID)
-		if err != nil {
-			respondErr(wr, err)
-			return
-		}
-
-		vrddtVideo, err := rvc.ret.GetVrddtVideoByID(req.Context(), redditVideo.VrddtVideoID)
-		if err != nil {
-			respondErr(wr, err)
-			return
-		}
-
-		respond(wr, http.StatusOK, vrddtVideo)
-		return
-	}
-
-	respondErr(wr, errors.MissingField("id"))
-
-	return
-}
-
-func (rvc *redditVideosController) getVrddtVideoByURL(wr http.ResponseWriter, req *http.Request) {
+// getByRedditURL will get the vrddt video by a query parameter for
+// the URL from Reddit
+func (rvc *redditVideosController) getByRedditURL(wr http.ResponseWriter, req *http.Request) {
 	if url, ok := mux.Vars(req)["url"]; ok {
 		finalURL, err := domain.GetFinalURL(url)
 		if err != nil {
@@ -195,23 +169,8 @@ func (rvc *redditVideosController) getVrddtVideoByURL(wr http.ResponseWriter, re
 		}
 
 		if redditVideo != nil {
-			if !redditVideo.VrddtVideoID.Valid() {
-				respondErr(wr, errors.InvalidValue("VrddtVideoID", "Invalid bson id"))
-				return
-			}
-
-			vrddtVideo, errVrddt := rvc.ret.GetVrddtVideoByID(context.TODO(), redditVideo.VrddtVideoID)
-			if err != nil {
-				switch errors.Type(errVrddt) {
-				case errors.TypeResourceNotFound:
-					rvc.Errorf("Reddit Video found (ID: %s) but vrddt Video (ID: %s) was not", redditVideo.ID.Hex(), redditVideo.VrddtVideoID.Hex())
-				default:
-					rvc.Errorf("Something went wrong: %s", errVrddt)
-				}
-			}
-
-			rvc.Infof("Reddit video already in the database with ID '%s' and a vrddt video of: %#v", redditVideo.ID, vrddtVideo)
-			respond(wr, http.StatusOK, vrddtVideo)
+			rvc.Infof("Reddit video already in the database with ID '%s': %#v", redditVideo.ID, redditVideo)
+			respond(wr, http.StatusOK, redditVideo)
 			return
 		}
 
@@ -257,36 +216,62 @@ func (rvc *redditVideosController) getVrddtVideoByURL(wr http.ResponseWriter, re
 				return
 			case <-tick:
 				// If the Reddit URL is not found in the database yet keep checking
-				temporaryRedditVideo, err := rvc.ret.GetByURL(context.TODO(), redditVideo.URL)
+				redditVideo, err = rvc.ret.GetByURL(context.TODO(), redditVideo.URL)
 				if err != nil {
 					switch errors.Type(err) {
 					default:
 					case errors.TypeUnknown:
-						rvc.Fatalf("Something went wrong: %s", err)
+						rvc.Errorf("Something went wrong: %s", err)
 					case errors.TypeResourceNotFound:
 						continue
 					}
 				}
-				rvc.Debugf("Reddit video now exists in db with a vrddt video ID: reddit video: %#v | vrddt video ID: %s", temporaryRedditVideo, temporaryRedditVideo.VrddtVideoID.Hex())
 
-				vrddtVideo, errVrddt := rvc.ret.GetVrddtVideoByID(context.TODO(), temporaryRedditVideo.VrddtVideoID)
-				if errVrddt != nil {
-					switch errors.Type(errVrddt) {
-					case errors.TypeResourceNotFound:
-						rvc.Errorf("Reddit video found (ID: %s) but associated vrddt video (ID: %s) was not", temporaryRedditVideo.ID.Hex(), temporaryRedditVideo.VrddtVideoID.Hex())
-					default:
-						rvc.Errorf("Something went wrong: %s", errVrddt)
-					}
-				}
+				rvc.Infof("Unique URL created new video: %#v", redditVideo)
 
-				rvc.Infof("Unique URL created new vrddt video: %#v", vrddtVideo)
-				respond(wr, http.StatusOK, vrddtVideo)
+				respond(wr, http.StatusOK, redditVideo)
+
 				return
 			}
 		}
 	}
 
 	respondErr(wr, errors.MissingField("url"))
+
+	return
+}
+
+// getVrddtVideoByURIPath will get the vrddt video by the URI path to Reddit
+// without the URL (this will catch "reddit.photos" substitution for the URL
+// instead of "reddit.com")
+func (rvc *redditVideosController) getVrddtVideoByURIPath(wr http.ResponseWriter, req *http.Request) {
+	if uri, ok := mux.Vars(req)["uri"]; ok {
+		url := fmt.Sprintf("%s/%s", domain.RedditDomainURLPrefix, uri)
+		fmt.Println(url)
+	}
+}
+
+// getVrddtVideoByID will get a vrddt video by the Reddit video ID
+func (rvc *redditVideosController) getVrddtVideoByID(wr http.ResponseWriter, req *http.Request) {
+	if id, ok := mux.Vars(req)["id"]; ok {
+		bsonID := bson.ObjectId(id)
+		redditVideo, err := rvc.ret.GetByID(req.Context(), bsonID)
+		if err != nil {
+			respondErr(wr, err)
+			return
+		}
+
+		vrddtVideo, err := rvc.ret.GetVrddtVideoByID(req.Context(), redditVideo.VrddtVideoID)
+		if err != nil {
+			respondErr(wr, err)
+			return
+		}
+
+		respond(wr, http.StatusOK, vrddtVideo)
+		return
+	}
+
+	respondErr(wr, errors.MissingField("id"))
 
 	return
 }
