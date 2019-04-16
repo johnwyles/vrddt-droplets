@@ -63,19 +63,19 @@ services:
       - rabbitmq:/var/lib/rabbitmq
       # - "./rabbitmq.config:/etc/rabbitmq/rabbitmq.config:ro"
 
-    # vrddt-api:
-    #   environment: *x-environment
-    #     FOO: bar
-    #   hostname: vrddt-api
-    #   image: vrddt-api
-    #   networks:
-    #     - vrddt_droplets_net
-    #   ports:
-    #     - "80:80"
-    #     - "443:443"
-    # links:
-    #   - mongo
-    #   - rabbitmq
+  vrddt-api:
+    entrypoint: dockerize -timeout 30s -wait tcp://mongo:27017 -wait tcp://rabbitmq:5672 -wait http://consul:8500 /app/vrddt-admin
+    environment: *environment
+    hostname: vrddt-api
+    image: johnwyles/vrddt-admin:${VRDDT_VERSION}
+    links:
+      - mongo
+      - rabbitmq
+    networks:
+      - vrddt_droplets_net
+    ports:
+      - "80:80"
+      - "443:443"
 
 networks:
   vrddt_droplets_net:
