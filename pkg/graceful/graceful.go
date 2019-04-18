@@ -75,6 +75,7 @@ func (gss *Server) ListenAndServe() error {
 // specified by Addr
 func (gss *Server) ListenAndServeTLS(certFile, keyFile string) error {
 	go func() {
+		gss.server.Addr = gss.Addr
 		if err := gss.server.ListenAndServeTLS(certFile, keyFile); err != http.ErrServerClosed {
 			gss.err = err
 		}

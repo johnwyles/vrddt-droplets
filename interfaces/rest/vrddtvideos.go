@@ -26,7 +26,7 @@ type vrddtVideosController struct {
 }
 
 // AddVrddtVideosAPI will register the various routes and their methods
-func (c *Controller) AddVrddtVideosAPI(loggerHandle logger.Logger, cons vrddtConstructor, des vrddtDestructor, ret vrddtRetriever, rcons redditConstructor, rret redditRetriever) {
+func AddVrddtVideosAPI(loggerHandle logger.Logger, router *mux.Router, cons vrddtConstructor, des vrddtDestructor, ret vrddtRetriever, rcons redditConstructor, rret redditRetriever) {
 	vvc := &vrddtVideosController{
 		Logger: loggerHandle,
 
@@ -37,7 +37,7 @@ func (c *Controller) AddVrddtVideosAPI(loggerHandle logger.Logger, cons vrddtCon
 	}
 
 	// TODO: Implement search / ALL
-	vvrouter := c.Router.PathPrefix("/vrddt_videos").Subrouter()
+	vvrouter := router.PathPrefix("/vrddt_videos").Subrouter()
 
 	vvrouter.HandleFunc("/{id}", vvc.getByID).Methods(http.MethodGet)
 	vvrouter.HandleFunc("/{md5}", vvc.getByMD5).Methods(http.MethodGet)

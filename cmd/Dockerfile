@@ -33,15 +33,17 @@ ENV COMMAND_SUFFIX=$COMMAND_SUFFIX
 ENV DOCKERIZE_VERSION v0.6.1
 ENV VERSION_FLAG=$VERSION_FLAG
 
-COPY ./config/gcs/vrddt-225521.json /vrddt-225521.json
-
 RUN apk add --no-cache openssl
 RUN wget https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSION/dockerize-alpine-linux-amd64-$DOCKERIZE_VERSION.tar.gz \
     && tar -C /usr/local/bin -xzvf dockerize-alpine-linux-amd64-$DOCKERIZE_VERSION.tar.gz \
     && rm dockerize-alpine-linux-amd64-$DOCKERIZE_VERSION.tar.gz
-RUN mkdir -p /app
 
-COPY --from=builder /vrddt-$COMMAND_SUFFIX /app/vrddt-$COMMAND_SUFFIX
+RUN mkdir -p /app/config
+
+COPY ./config/gcs/vrddt-225521.json /app/config/vrddt-225521.json
+COPY ./config/config.example.toml /app/config/config.example.toml
+
+COPY --from=builder /vrddt-$COMMAND_SUFFIX /vrddt-$COMMAND_SUFFIX
 RUN chmod +x /app/vrddt-$COMMAND_SUFFIX
 
 ENTRYPOINT /app/vrddt-$COMMAND_SUFFIX

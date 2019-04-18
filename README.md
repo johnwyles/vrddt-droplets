@@ -1,28 +1,21 @@
 # vrddt
 
-Project skeleton and more importantly architecture from: [spy16/droplets](https://github.com/spy16/droplets)
+Project skeleton and general architecture from: [spy16/droplets](https://github.com/spy16/droplets)
 
-## Building
+## TODO
 
-vrddt uses `go mod` (available from go 1.11) for dependency management.
-
-To test and build, run `make all`.
-
-## License
-
-TODO
     - Research and implement context correctly
     - CMD
-        - ADMIN
-        - CLI
         - WORKER
-        - API-WEB
+        - API
             - Authorization / OAuth
-            - Frontend JS to use REST API
+        - WEB
+            - Rate limiting
     - INTERNALS
         - Refactor to return errors.XXX instead of fmt.Errorf
-        - Makefile is broken
-        - Dockerize
+        - API Address needs to be sorted out where the Address can be anything local or remote
+        - Makefile/Dockerfile/docker-compose.yml refactor for DRY
+            - Dockerfile for each command so `server.crt` is only for web and API gcs is only for worker, etc
         - Add S3 storage support
         - Implement other video types for video processor
             - Breakout Upload feature and vrddt video association so it can be

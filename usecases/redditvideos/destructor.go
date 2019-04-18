@@ -21,9 +21,9 @@ type Destructor struct {
 }
 
 // NewDestructor initializes the vrddt  usecase.
-func NewDestructor(lg logger.Logger, queue queue.Queue, store store.Store) *Destructor {
+func NewDestructor(loggerHandle logger.Logger, queue queue.Queue, store store.Store) *Destructor {
 	return &Destructor{
-		Logger: lg,
+		Logger: loggerHandle,
 
 		queue: queue,
 		store: store,

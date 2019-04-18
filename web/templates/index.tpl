@@ -24,12 +24,12 @@
   <div class="container">
     <h1>Enter Reddit URL:</h1>
     <form id="convert-form" class="form-inline">
-      <input id="url" name="url" class="form-control mr-sm-2" type="text" placeholder="https://" aria-label="Convert">
+      <input id="url" name="url" class="form-control mr-sm-2" type="text" placeholder="https://" aria-label="Convert" value="{{.RedditURL}}" />
       <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Convert</button>
     </form>
-    <div id="convert-response" style="display: none;">
+    <div id="convert-response">
       <h1>Converted Video Link:</h1>
-      <a id="convert-link"></a>
+      <a id="convert-link" href="{{.VrddtURL}}">{{.VrddtURL}}</a>
     </div>
   </div>
   <!-- Optional JavaScript -->
@@ -48,17 +48,13 @@
         data: $(this).serializeArray(),
         dataType: "json",
         type: "GET",
-        url: 'http://localhost:3000/reddit_videos/',
+        url: 'https://{{.VrddtAPIAddress}}/reddit_videos/',
         success: function(reddit_response)
         {
           var vrddt_response = "";
           $.ajax({
-            /*
-            data: {"url": reddit_response.id},
-            dataType: "json",
-            */
             type: "GET", 
-            url: 'http://localhost:3000/vrddt_videos/'+reddit_response.vrddt_video_id,
+            url: 'https://{{.VrddtAPIAddress}}/vrddt_videos/'+reddit_response.vrddt_video_id,
             success: function(vrddt_response)
             {
               console.log(reddit_response);

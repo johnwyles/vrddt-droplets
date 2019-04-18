@@ -7,20 +7,21 @@ import (
 	"github.com/johnwyles/vrddt-droplets/pkg/logger"
 )
 
-func newSafeFileSystemServer(lg logger.Logger, root string) http.Handler {
-	sfs := &safeFileSystem{
-		fs:     http.Dir(root),
-		Logger: lg,
-	}
-	return http.FileServer(sfs)
-}
-
 // safeFileSystem implements http.FileSystem. It is used to prevent directory
 // listing of static assets.
 type safeFileSystem struct {
 	logger.Logger
 
 	fs http.FileSystem
+}
+
+func newSafeFileSystemServer(loggerHandle logger.Logger, root string) http.Handler {
+	sfs := &safeFileSystem{
+		Logger: loggerHandle,
+
+		fs: http.Dir(root),
+	}
+	return http.FileServer(sfs)
 }
 
 func (sfs safeFileSystem) Open(path string) (http.File, error) {

@@ -26,9 +26,9 @@ type Retriever struct {
 }
 
 // NewRetriever initializes an instance of Retriever with given store.
-func NewRetriever(lg logger.Logger, store store.Store) *Retriever {
+func NewRetriever(loggerHandle logger.Logger, store store.Store) *Retriever {
 	return &Retriever{
-		Logger: lg,
+		Logger: loggerHandle,
 
 		store: store,
 	}

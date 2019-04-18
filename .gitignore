@@ -22,3 +22,5 @@ test.db
 debug
 
 vrddt-225521.json
+server.crt
+server.key

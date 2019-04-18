@@ -1,8 +1,14 @@
+[API]
+    Address         = "localhost:9090"
+
 [Log]
     Format = "text"
     Level  = "debug"
 
 [Web]
     Address         = ":8080"
+    CertFile        = "config/ssl/server.crt"
     GracefulTimeout = 60
-    PathPrefix      = "/"
+    KeyFile         = "config/ssl/server.key"
+    StaticDir       = "web/static"
+    TemplateDir     = "web/templates"

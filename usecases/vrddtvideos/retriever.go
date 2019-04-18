@@ -10,20 +10,20 @@ import (
 	"github.com/johnwyles/vrddt-droplets/pkg/logger"
 )
 
-// NewRetriever initializes the retrieval usecase with given store.
-func NewRetriever(lg logger.Logger, store store.Store) *Retriever {
-	return &Retriever{
-		Logger: lg,
-
-		store: store,
-	}
-}
-
 // Retriever provides retrieval related usecases.
 type Retriever struct {
 	logger.Logger
 
 	store store.Store
+}
+
+// NewRetriever initializes the retrieval usecase with given store.
+func NewRetriever(loggerHandle logger.Logger, store store.Store) *Retriever {
+	return &Retriever{
+		Logger: loggerHandle,
+
+		store: store,
+	}
 }
 
 // GetByID finds a vrddt video by its id.

@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/gorilla/mux"
+
 	"github.com/johnwyles/vrddt-droplets/pkg/logger"
 )
 
@@ -16,31 +17,37 @@ type Controller struct {
 }
 
 // New initializes a new webapp server.
-func New(loggerHandle logger.Logger) (controller *Controller, err error) {
+func New(loggerHandle logger.Logger, vrddtAPIAddress string, templateDir string, staticDir string) (controller *Controller, err error) {
 	controller = &Controller{
 		Router: mux.NewRouter(),
 	}
 
-	tpl, err := initTemplate(loggerHandle, "", "web/templates")
+	tpl, err := initTemplate(loggerHandle, "", templateDir)
 	if err != nil {
 		return
 	}
 
 	app := &app{
+		Logger: loggerHandle,
 		render: func(wr http.ResponseWriter, tplName string, data interface{}) {
 			if err := tpl.ExecuteTemplate(wr, tplName, data); err != nil {
 				loggerHandle.Errorf("Failed to render template '%s': %+v", tplName, err)
 			}
 		},
+		vrddtAPIAddress: vrddtAPIAddress,
 	}
 
 	// Static file serving
-	fsServer := newSafeFileSystemServer(loggerHandle, "web/static")
+	fsServer := newSafeFileSystemServer(loggerHandle, staticDir)
 	controller.Router.PathPrefix("/static").Handler(http.StripPrefix("/static", fsServer))
 	controller.Router.Handle("/favicon.ico", fsServer)
 
 	// Root route
 	controller.Router.HandleFunc("/", app.indexHandler)
+
+	// If none of the paths are found from the above we should try to catch all
+	// URI requests to see if they are a valid Reddit URI
+	controller.Router.HandleFunc("/{uri:.*}", app.uriHandler).Methods(http.MethodGet)
 
 	return
 }

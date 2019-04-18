@@ -2,9 +2,11 @@ package main
 
 import (
 	"context"
+	"net/http"
 	"os"
 	"time"
 
+	"github.com/gorilla/mux"
 	"github.com/rs/cors"
 	cli "gopkg.in/urfave/cli.v2"
 	"gopkg.in/urfave/cli.v2/altsrc"
@@ -29,9 +31,10 @@ func main() {
 	// options with the arguments on the command line
 	cfg := &config.Config{
 		API: config.APIConfig{
-			Address:         ":3000",
+			Address:         ":9090",
+			CertFile:        "config/ssl/server.crt",
 			GracefulTimeout: 30,
-			PathPrefix:      "/",
+			KeyFile:         "config/ssl/server.key",
 		},
 		Log: config.LogConfig{
 			Format: "text",
@@ -66,6 +69,7 @@ func main() {
 	// configuration file, or command-line flags
 	flags := []cli.Flag{
 		&cli.StringFlag{
+			Aliases: []string{"c"},
 			EnvVars: []string{"VRDDT_CONFIG"},
 			Name:    "config",
 			Usage:   "vrddt-admin TOML configuration file",
@@ -81,6 +85,16 @@ func main() {
 				Value:       cfg.API.Address,
 			},
 		),
+		altsrc.NewStringFlag(
+			&cli.StringFlag{
+				Aliases:     []string{"f"},
+				Destination: &cfg.API.CertFile,
+				EnvVars:     []string{"VRDDT_API_CERT_FILE"},
+				Name:        "API.CertFile",
+				Usage:       "API SSL certificate file",
+				Value:       cfg.API.CertFile,
+			},
+		),
 		altsrc.NewIntFlag(
 			&cli.IntFlag{
 				Aliases:     []string{"t"},
@@ -89,6 +103,16 @@ func main() {
 				Name:        "API.GracefulTimeout",
 				Usage:       "API graceful timeout (in seconds)",
 				Value:       cfg.API.GracefulTimeout,
+			},
+		),
+		altsrc.NewStringFlag(
+			&cli.StringFlag{
+				Aliases:     []string{"k"},
+				Destination: &cfg.API.KeyFile,
+				EnvVars:     []string{"VRDDT_API_KEY_FILE"},
+				Name:        "API.KeyFile",
+				Usage:       "API SSL key file",
+				Value:       cfg.API.KeyFile,
 			},
 		),
 		altsrc.NewStringFlag(
@@ -231,22 +255,26 @@ func rootAction(cfg *config.Config) cli.ActionFunc {
 		str.Init(context.TODO())
 
 		// Get the REST controller
-		restController := rest.New(loggerHandle)
+		router := mux.NewRouter()
+
+		// Setup router with default handlers
+		router.NotFoundHandler = http.HandlerFunc(rest.NotFoundHandler)
+		router.MethodNotAllowedHandler = http.HandlerFunc(rest.MethodNotAllowedHandler)
 
 		// Setup API endpoints for Reddit videos
 		rvc := redditvideos.NewConstructor(loggerHandle, q, str)
 		rvd := redditvideos.NewDestructor(loggerHandle, q, str)
 		rvr := redditvideos.NewRetriever(loggerHandle, str)
-		restController.AddRedditVideosAPI(loggerHandle, rvc, rvd, rvr)
+		rest.AddRedditVideosAPI(loggerHandle, router, rvc, rvd, rvr)
 
 		// Setup API endpoints for vrddt videos
 		vvc := vrddtvideos.NewConstructor(loggerHandle, str)
 		vvd := vrddtvideos.NewDestructor(loggerHandle, str)
 		vvr := vrddtvideos.NewRetriever(loggerHandle, str)
-		restController.AddVrddtVideosAPI(loggerHandle, vvc, vvd, vvr, rvc, rvr)
+		rest.AddVrddtVideosAPI(loggerHandle, router, vvc, vvd, vvr, rvc, rvr)
 
 		// Setup API middleware
-		handler := middlewares.WithRequestLogging(loggerHandle, restController.Router)
+		handler := middlewares.WithRequestLogging(loggerHandle, router)
 		handler = middlewares.WithRecovery(loggerHandle, handler)
 		co := cors.New(cors.Options{
 			AllowedOrigins: []string{"*"},
@@ -259,8 +287,8 @@ func rootAction(cfg *config.Config) cli.ActionFunc {
 		srv.Log = loggerHandle.Errorf
 		srv.Addr = cfg.API.Address
 
-		loggerHandle.Infof("API is listening as: %s", cfg.API.Address)
-		if err := srv.ListenAndServe(); err != nil {
+		loggerHandle.Infof("API server is listening as: %s", cfg.API.Address)
+		if err := srv.ListenAndServeTLS(cfg.API.CertFile, cfg.API.KeyFile); err != nil {
 			loggerHandle.Fatalf("API server exited: %s", err)
 		}
 

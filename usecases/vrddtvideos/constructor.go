@@ -9,20 +9,20 @@ import (
 	"github.com/johnwyles/vrddt-droplets/pkg/logger"
 )
 
-// NewConstructor initializes the vrddt  usecase.
-func NewConstructor(lg logger.Logger, store store.Store) *Constructor {
-	return &Constructor{
-		Logger: lg,
-
-		store: store,
-	}
-}
-
 // Constructor implements the publishing usecases.
 type Constructor struct {
 	logger.Logger
 
 	store store.Store
+}
+
+// NewConstructor initializes the vrddt  usecase.
+func NewConstructor(loggerHandle logger.Logger, store store.Store) *Constructor {
+	return &Constructor{
+		Logger: loggerHandle,
+
+		store: store,
+	}
 }
 
 // Create validates and persists the vrddt video into the store.

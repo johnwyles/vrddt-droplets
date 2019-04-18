@@ -79,6 +79,7 @@ func main() {
 	// configuration file, or command-line flags
 	flags := []cli.Flag{
 		&cli.StringFlag{
+			Aliases: []string{"c"},
 			EnvVars: []string{"VRDDT_CONFIG"},
 			Name:    "config",
 			Usage:   "vrddt-admin TOML configuration file",

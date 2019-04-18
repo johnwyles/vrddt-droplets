@@ -20,11 +20,12 @@ type Constructor struct {
 }
 
 // NewConstructor initializes a Creation service object.
-func NewConstructor(lg logger.Logger, queue queue.Queue, store store.Store) *Constructor {
+func NewConstructor(loggerHandle logger.Logger, queue queue.Queue, store store.Store) *Constructor {
 	return &Constructor{
-		Logger: lg,
-		queue:  queue,
-		store:  store,
+		Logger: loggerHandle,
+
+		queue: queue,
+		store: store,
 	}
 }
 

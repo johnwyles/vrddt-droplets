@@ -28,14 +28,20 @@ func main() {
 	// somewhat ugly but necessary if we want to override configuration file
 	// options with the arguments on the command line
 	cfg := &config.Config{
+		API: config.APIConfig{
+			Address: ":9090",
+		},
 		Log: config.LogConfig{
 			Format: "text",
 			Level:  "debug",
 		},
 		Web: config.WebConfig{
 			Address:         ":8080",
+			CertFile:        "config/ssl/server.crt",
 			GracefulTimeout: 30,
-			PathPrefix:      "/",
+			KeyFile:         "config/ssl/server.key",
+			StaticDir:       "web/static",
+			TemplateDir:     "web/templates",
 		},
 	}
 
@@ -43,6 +49,7 @@ func main() {
 	// configuration file, or command-line flags
 	flags := []cli.Flag{
 		&cli.StringFlag{
+			Aliases: []string{"c"},
 			EnvVars: []string{"VRDDT_CONFIG"},
 			Name:    "config",
 			Usage:   "vrddt-admin TOML configuration file",
@@ -50,22 +57,11 @@ func main() {
 		},
 		altsrc.NewStringFlag(
 			&cli.StringFlag{
-				Aliases:     []string{"a"},
-				Destination: &cfg.Web.Address,
-				EnvVars:     []string{"VRDDT_WEB_ADDRESS"},
-				Name:        "Web.Address",
-				Usage:       "Web listening address",
-				Value:       cfg.Web.Address,
-			},
-		),
-		altsrc.NewIntFlag(
-			&cli.IntFlag{
-				Aliases:     []string{"t"},
-				Destination: &cfg.Web.GracefulTimeout,
-				EnvVars:     []string{"VRDDT_WEB_GRACEFUL_TIMEOUT"},
-				Name:        "Web.GracefulTimeout",
-				Usage:       "Web graceful timeout (in seconds)",
-				Value:       cfg.Web.GracefulTimeout,
+				Destination: &cfg.API.Address,
+				EnvVars:     []string{"VRDDT_API_ADDRESS"},
+				Name:        "API.Address",
+				Usage:       "API listening address",
+				Value:       cfg.API.Address,
 			},
 		),
 		altsrc.NewStringFlag(
@@ -142,6 +138,66 @@ func main() {
 				Value:       cfg.Store.Mongo.VrddtVideosCollectionName,
 			},
 		),
+		altsrc.NewStringFlag(
+			&cli.StringFlag{
+				Aliases:     []string{"a"},
+				Destination: &cfg.Web.Address,
+				EnvVars:     []string{"VRDDT_WEB_ADDRESS"},
+				Name:        "Web.Address",
+				Usage:       "Web listening address",
+				Value:       cfg.Web.Address,
+			},
+		),
+		altsrc.NewStringFlag(
+			&cli.StringFlag{
+				Aliases:     []string{"f"},
+				Destination: &cfg.Web.CertFile,
+				EnvVars:     []string{"VRDDT_WEB_CERT_FILE"},
+				Name:        "Web.CertFile",
+				Usage:       "Web SSL certification file",
+				Value:       cfg.Web.CertFile,
+			},
+		),
+		altsrc.NewIntFlag(
+			&cli.IntFlag{
+				Aliases:     []string{"t"},
+				Destination: &cfg.Web.GracefulTimeout,
+				EnvVars:     []string{"VRDDT_WEB_GRACEFUL_TIMEOUT"},
+				Name:        "Web.GracefulTimeout",
+				Usage:       "Web graceful timeout (in seconds)",
+				Value:       cfg.Web.GracefulTimeout,
+			},
+		),
+		altsrc.NewStringFlag(
+			&cli.StringFlag{
+				Aliases:     []string{"k"},
+				Destination: &cfg.Web.KeyFile,
+				EnvVars:     []string{"VRDDT_WEB_KEY_FILE"},
+				Name:        "Web.KeyFile",
+				Usage:       "Web server SSL key file",
+				Value:       cfg.Web.KeyFile,
+			},
+		),
+		altsrc.NewStringFlag(
+			&cli.StringFlag{
+				Aliases:     []string{"s"},
+				Destination: &cfg.Web.StaticDir,
+				EnvVars:     []string{"VRDDT_WEB_STATIC_DIR"},
+				Name:        "Web.StaticDir",
+				Usage:       "Web server static files directory",
+				Value:       cfg.Web.StaticDir,
+			},
+		),
+		altsrc.NewStringFlag(
+			&cli.StringFlag{
+				Aliases:     []string{"d"},
+				Destination: &cfg.Web.TemplateDir,
+				EnvVars:     []string{"VRDDT_WEB_TEMPLATE_DIR"},
+				Name:        "Web.TemplateDir",
+				Usage:       "Web server template files directory",
+				Value:       cfg.Web.TemplateDir,
+			},
+		),
 	}
 
 	app := &cli.App{
@@ -194,34 +250,16 @@ func rootAction(cfg *config.Config) cli.ActionFunc {
 		// Initalize connections
 		loggerHandle = logger.New(os.Stderr, cfg.Log.Level, cfg.Log.Format)
 
-		// q, err := queue.RabbitMQ(&cfg.Queue.RabbitMQ, loggerHandle)
-		// if err != nil {
-		// 	return
-		// }
-
-		// // Setup the store
-		// str, err := store.Mongo(&cfg.Store.Mongo, loggerHandle)
-		// if err != nil {
-		// 	return
-		// }
-
 		// Get the web controller
-		webController, err := web.New(loggerHandle)
+		webController, err := web.New(
+			loggerHandle,
+			cfg.API.Address,
+			cfg.Web.TemplateDir,
+			cfg.Web.StaticDir,
+		)
 		if err != nil {
 			return
 		}
-
-		// // Setup web endpoints for Reddit videos
-		// rvc := redditvideos.NewConstructor(loggerHandle, q, str)
-		// rvd := redditvideos.NewDestructor(loggerHandle, q, str)
-		// rvr := redditvideos.NewRetriever(loggerHandle, str)
-		// webController.AddRedditVideosAPI(loggerHandle, rvc, rvd, rvr)
-
-		// // Setup API endpoints for vrddt videos
-		// vvc := vrddtvideos.NewConstructor(loggerHandle, str)
-		// vvd := vrddtvideos.NewDestructor(loggerHandle, str)
-		// vvr := vrddtvideos.NewRetriever(loggerHandle, str)
-		// webController.AddVrddtVideosAPI(loggerHandle, vvc, vvd, vvr)
 
 		// Setup API middleware
 		handler := middlewares.WithRequestLogging(loggerHandle, webController.Router)
@@ -231,8 +269,8 @@ func rootAction(cfg *config.Config) cli.ActionFunc {
 		srv.Log = loggerHandle.Errorf
 		srv.Addr = cfg.Web.Address
 
-		loggerHandle.Infof("Web is listening as: %s", cfg.Web.Address)
-		if err := srv.ListenAndServe(); err != nil {
+		loggerHandle.Infof("Web server is listening as: %s", cfg.Web.Address)
+		if err := srv.ListenAndServeTLS(cfg.Web.CertFile, cfg.Web.KeyFile); err != nil {
 			loggerHandle.Fatalf("Web server exited: %s", err)
 		}
 
@@ -256,6 +294,6 @@ func prepareResources(cfg *config.Config) cli.PrepareFunc {
 		// Initalize logger
 		loggerHandle = logger.New(os.Stderr, cfg.Log.Level, cfg.Log.Format)
 
-		return nil
+		return
 	}
 }
