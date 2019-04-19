@@ -1,6 +1,11 @@
 [CLI]
     APIURI = "http://localhost:9090"
 
+[Converter]
+    Type = "ffmpeg"
+    [Converter.FFmpeg]
+	   Path = "/usr/local/bin/ffmpeg"
+
 [Log]
     Format  = "text"
-    Level   = "debug"
+    Level   = "info"

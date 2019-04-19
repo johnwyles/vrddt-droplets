@@ -1,36 +1,40 @@
 package main
 
 import (
+	"fmt"
 	"os"
+	"strconv"
 	"time"
 
-	// "github.com/gorilla/mux"
 	cli "gopkg.in/urfave/cli.v2"
 	"gopkg.in/urfave/cli.v2/altsrc"
 
 	"github.com/johnwyles/vrddt-droplets/interfaces/config"
-	"github.com/johnwyles/vrddt-droplets/pkg/logger"
-
-	// "github.com/johnwyles/vrddt-droplets/interfaces/queue"
-	// "github.com/johnwyles/vrddt-droplets/interfaces/store"
 	"github.com/johnwyles/vrddt-droplets/interfaces/web"
 	"github.com/johnwyles/vrddt-droplets/pkg/graceful"
+	"github.com/johnwyles/vrddt-droplets/pkg/logger"
 	"github.com/johnwyles/vrddt-droplets/pkg/middlewares"
-	// "github.com/johnwyles/vrddt-droplets/usecases/redditvideos"
-	// "github.com/johnwyles/vrddt-droplets/usecases/vrddtvideos"
 )
 
-// loggerHandle is the current logger facility
-var loggerHandle logger.Logger
+var (
+	// BuildTimestamp is the build date
+	BuildTimestamp string
+
+	// GitHash is the git build hash
+	GitHash string
+
+	// Version is the version of the software
+	Version string
+
+	// loggerHandle is the current logger facility
+	loggerHandle logger.Logger
+)
 
 func main() {
 	// Setup some sensible defaults for the vrddt configuration - this is
 	// somewhat ugly but necessary if we want to override configuration file
 	// options with the arguments on the command line
 	cfg := &config.Config{
-		API: config.APIConfig{
-			Address: ":9090",
-		},
 		Log: config.LogConfig{
 			Format: "text",
 			Level:  "debug",
@@ -42,6 +46,7 @@ func main() {
 			KeyFile:         "config/ssl/server.key",
 			StaticDir:       "web/static",
 			TemplateDir:     "web/templates",
+			VrddtAPIURI:     "https://localhost:9090",
 		},
 	}
 
@@ -55,15 +60,6 @@ func main() {
 			Usage:   "vrddt-admin TOML configuration file",
 			Value:   "",
 		},
-		altsrc.NewStringFlag(
-			&cli.StringFlag{
-				Destination: &cfg.API.Address,
-				EnvVars:     []string{"VRDDT_API_ADDRESS"},
-				Name:        "API.Address",
-				Usage:       "API listening address",
-				Value:       cfg.API.Address,
-			},
-		),
 		altsrc.NewStringFlag(
 			&cli.StringFlag{
 				Aliases:     []string{"lf"},
@@ -198,6 +194,21 @@ func main() {
 				Value:       cfg.Web.TemplateDir,
 			},
 		),
+		altsrc.NewStringFlag(
+			&cli.StringFlag{
+				Destination: &cfg.Web.VrddtAPIURI,
+				EnvVars:     []string{"VRDDT_WEB_APIURI"},
+				Name:        "Web.VrddtAPIURI",
+				Usage:       "vrddt API URI",
+				Value:       cfg.Web.VrddtAPIURI,
+			},
+		),
+	}
+
+	timeStamp, err := strconv.ParseInt(BuildTimestamp, 10, 64)
+	if err != nil {
+		now := time.Now()
+		timeStamp = now.Unix()
 	}
 
 	app := &cli.App{
@@ -219,11 +230,13 @@ func main() {
 				return &altsrc.MapInputSource{}, nil
 			},
 		),
-		Prepare: prepareResources(cfg),
-		Flags:   flags,
-		Name:    "vrddt-web",
-		Usage:   "vrddt Web service",
-		Version: "v0.0.1",
+		Commands: allCommands(cfg),
+		Compiled: time.Now(),
+		Flags:    flags,
+		Name:     "vrddt-web",
+		Prepare:  prepareResources(cfg),
+		Usage:    "vrddt Web service",
+		Version:  fmt.Sprintf("%s [Build Date: %s, Git Hash: %s]", Version, time.Unix(timeStamp, 0), GitHash),
 	}
 
 	cli.HelpFlag = &cli.BoolFlag{
@@ -240,7 +253,36 @@ func main() {
 
 	if err := app.Run(os.Args); err != nil {
 		loggerHandle.Fatalf("An error occured running the application: %s", err)
-		os.Exit(1) // This may be repetitive with above
+		os.Exit(1)
+
+		return
+	}
+
+	return
+}
+
+// allCommands are all of the commands we are able to run
+func allCommands(cfg *config.Config) []*cli.Command {
+	return []*cli.Command{}
+}
+
+// afterResources will execute after Action() to cleanup
+func afterResources(cfg *config.Config) cli.AfterFunc {
+	return func(cliContext *cli.Context) (err error) {
+		// TODO: Do stuff
+
+		return
+	}
+}
+
+// prepareResources will setup some common shared resources amoung all of the
+// commands and make them avaiable to use
+func prepareResources(cfg *config.Config) cli.PrepareFunc {
+	return func(cliContext *cli.Context) (err error) {
+		// Initalize logger
+		loggerHandle = logger.New(os.Stderr, cfg.Log.Level, cfg.Log.Format)
+
+		return
 	}
 }
 
@@ -253,7 +295,7 @@ func rootAction(cfg *config.Config) cli.ActionFunc {
 		// Get the web controller
 		webController, err := web.New(
 			loggerHandle,
-			cfg.API.Address,
+			cfg.Web.VrddtAPIURI,
 			cfg.Web.TemplateDir,
 			cfg.Web.StaticDir,
 		)
@@ -273,26 +315,6 @@ func rootAction(cfg *config.Config) cli.ActionFunc {
 		if err := srv.ListenAndServeTLS(cfg.Web.CertFile, cfg.Web.KeyFile); err != nil {
 			loggerHandle.Fatalf("Web server exited: %s", err)
 		}
-
-		return
-	}
-}
-
-// afterResources will execute after Action() to cleanup
-func afterResources(cfg *config.Config) cli.AfterFunc {
-	return func(cliContext *cli.Context) (err error) {
-		// TODO: Do stuff
-
-		return
-	}
-}
-
-// prepareResources will setup some common shared resources amoung all of the
-// commands and make them avaiable to use
-func prepareResources(cfg *config.Config) cli.PrepareFunc {
-	return func(cliContext *cli.Context) (err error) {
-		// Initalize logger
-		loggerHandle = logger.New(os.Stderr, cfg.Log.Level, cfg.Log.Format)
 
 		return
 	}

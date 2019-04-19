@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"os"
+	"strconv"
+	"time"
 
 	cli "gopkg.in/urfave/cli.v2"
 	"gopkg.in/urfave/cli.v2/altsrc"
@@ -25,18 +27,22 @@ type Services struct {
 	Worker    worker.Worker
 }
 
-// loggerHandle is the current logger facility
-var loggerHandle logger.Logger
+var (
+	// BuildTimestamp is the build date
+	BuildTimestamp string
 
-// services will be a refer to our global services avaiable to the subcommands
-var services = &Services{}
+	// GitHash is the git build hash
+	GitHash string
 
-// allCommands are all of the commands we are able to run
-func allCommands(cfg *config.Config) []*cli.Command {
-	return []*cli.Command{
-		Processor(cfg),
-	}
-}
+	// Version is the version of the software
+	Version string
+
+	// loggerHandle is the current logger facility
+	loggerHandle logger.Logger
+
+	// services will be a refer to our global services avaiable to the subcommands
+	services = &Services{}
+)
 
 func main() {
 	// Setup some sensible defaults for the vrddt worker converter
@@ -216,6 +222,12 @@ func main() {
 		),
 	}
 
+	timeStamp, err := strconv.ParseInt(BuildTimestamp, 10, 64)
+	if err != nil {
+		now := time.Now()
+		timeStamp = now.Unix()
+	}
+
 	app := &cli.App{
 		Action: rootAction(cfg),
 		After:  afterResources(cfg),
@@ -235,12 +247,13 @@ func main() {
 				return &altsrc.MapInputSource{}, nil
 			},
 		),
+		Compiled: time.Now(),
 		Commands: allCommands(cfg),
 		Flags:    flags,
 		Name:     "vrddt-worker",
 		Prepare:  prepareResources(cfg),
-		Usage:    "vrddt Long-lived worker processes",
-		Version:  "v0.0.1",
+		Usage:    "vrddt long-lived worker processes",
+		Version:  fmt.Sprintf("%s [Build Date: %s, Git Hash: %s]", Version, time.Unix(timeStamp, 0), GitHash),
 	}
 
 	cli.HelpFlag = &cli.BoolFlag{
@@ -258,7 +271,11 @@ func main() {
 	if err := app.Run(os.Args); err != nil {
 		loggerHandle.Fatalf("An error occured running the application: %s", err)
 		os.Exit(1)
+
+		return
 	}
+
+	return
 }
 
 // afterResources will execute after Action() to cleanup
@@ -313,6 +330,14 @@ func prepareResources(cfg *config.Config) cli.PrepareFunc {
 		}
 
 		return nil
+	}
+}
+
+// allCommands are all of the commands we are able to run
+func allCommands(cfg *config.Config) []*cli.Command {
+	return []*cli.Command{
+		Processor(cfg),
+		Watcher(cfg),
 	}
 }
 

@@ -17,21 +17,21 @@ import (
 type URL struct {
 	logger.Logger
 
-	RedditURL       string
-	VrddtAPIAddress string
-	VrddtURL        string
+	RedditURL   string
+	VrddtAPIURI string
+	VrddtURL    string
 }
 
 type app struct {
 	logger.Logger
 
-	render          func(wr http.ResponseWriter, tpl string, data interface{})
-	tpl             template.Template
-	vrddtAPIAddress string
+	render      func(wr http.ResponseWriter, tpl string, data interface{})
+	tpl         template.Template
+	vrddtAPIURI string
 }
 
 func (app app) indexHandler(wr http.ResponseWriter, req *http.Request) {
-	app.render(wr, "index.tpl", URL{VrddtAPIAddress: app.vrddtAPIAddress})
+	app.render(wr, "index.tpl", URL{VrddtAPIURI: app.vrddtAPIURI})
 }
 
 // uriHandler will get the vrddt video by the URI path to Reddit
@@ -41,7 +41,7 @@ func (app app) uriHandler(wr http.ResponseWriter, req *http.Request) {
 	if uri, ok := mux.Vars(req)["uri"]; ok {
 		url := fmt.Sprintf("https://%s/%s", domain.RedditDomain, uri)
 
-		apiURL := fmt.Sprintf("https://%s/vrddt_videos/", app.vrddtAPIAddress)
+		apiURL := fmt.Sprintf("%s/vrddt_videos/", app.vrddtAPIURI)
 		req, err := http.NewRequest(http.MethodGet, apiURL, nil)
 		if err != nil {
 			app.Fatalf("NewRequest: %s", err)
@@ -72,9 +72,9 @@ func (app app) uriHandler(wr http.ResponseWriter, req *http.Request) {
 		}
 
 		urls := URL{
-			RedditURL:       url,
-			VrddtURL:        vrddtVideo.URL,
-			VrddtAPIAddress: app.vrddtAPIAddress,
+			RedditURL:   url,
+			VrddtURL:    vrddtVideo.URL,
+			VrddtAPIURI: app.vrddtAPIURI,
 		}
 
 		app.Infof("vrddt video URL: %s", urls.VrddtURL)

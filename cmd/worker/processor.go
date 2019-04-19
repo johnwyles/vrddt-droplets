@@ -8,8 +8,6 @@ import (
 
 	"github.com/johnwyles/vrddt-droplets/domain"
 	"github.com/johnwyles/vrddt-droplets/interfaces/config"
-	// "github.com/johnwyles/vrddt-droplets/usecases/redditvideos"
-	// "github.com/johnwyles/vrddt-droplets/usecases/vrddtvideos"
 )
 
 // Processor will process a Reddit URL into a vrddt video using our internal

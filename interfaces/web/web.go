@@ -17,7 +17,7 @@ type Controller struct {
 }
 
 // New initializes a new webapp server.
-func New(loggerHandle logger.Logger, vrddtAPIAddress string, templateDir string, staticDir string) (controller *Controller, err error) {
+func New(loggerHandle logger.Logger, vrddtAPIURI string, templateDir string, staticDir string) (controller *Controller, err error) {
 	controller = &Controller{
 		Router: mux.NewRouter(),
 	}
@@ -34,7 +34,7 @@ func New(loggerHandle logger.Logger, vrddtAPIAddress string, templateDir string,
 				loggerHandle.Errorf("Failed to render template '%s': %+v", tplName, err)
 			}
 		},
-		vrddtAPIAddress: vrddtAPIAddress,
+		vrddtAPIURI: vrddtAPIURI,
 	}
 
 	// Static file serving

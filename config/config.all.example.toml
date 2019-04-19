@@ -1,0 +1,56 @@
+[API]
+    Address         = ":9090"
+    GracefulTimeout = 60
+
+[CLI]
+    APIURI = "http://localhost:9090"
+
+[Converter]
+    Type = "ffmpeg"
+    [Converter.FFmpeg]
+	   Path = "/usr/local/bin/ffmpeg"
+
+[Log]
+    Format  = "text"
+    Level   = "info"
+
+[Queue]
+    Type = "rabbitmq"
+    [Queue.RabbitMQ]
+        BindingKeyName = "vrddt-bindingkey-converter"
+        ExchangeName   = "vrddt-exchange-converter"
+    	QueueName      = "vrddt-queue-converter"
+    	URI            = "amqp://admin:password@localhost:5672"
+    [Queue.Memory]
+        MaxSize = 100000
+
+[Storage]
+    Type = "gcs"
+    [Storage.GCS]
+    	CredentialsJSON = "/app/config/vrddt-225521.json"
+    	GCSBucket       = "vrddt-media"
+    [Storage.Local]
+        Path = "/tmp"
+
+[Store]
+    Type = "mongo"
+    [Store.Mongo]
+        RedditVideosCollectionName = "reddit_videos"
+    	URI                        = "mongodb://admin:password@localhost:27017/vrddt"
+        VrddtVideosCollectionName  = "vrddt_videos"
+    [Store.Memory]
+        MaxSize = 100000
+
+[Web]
+    Address         = ":8080"
+    CertFile        = "config/ssl/server.crt"
+    GracefulTimeout = 60
+    KeyFile         = "config/ssl/server.key"
+    StaticDir       = "web/static"
+    TemplateDir     = "web/templates"
+    VrddtAPIURI     = "https://localhost:9090"
+
+[Worker]
+    [Worker.Processor]
+        MaxErrors = 10
+        Sleep = 500

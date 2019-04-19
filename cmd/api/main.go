@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -22,8 +24,19 @@ import (
 	"github.com/johnwyles/vrddt-droplets/usecases/vrddtvideos"
 )
 
-// loggerHandle is the current logger facility
-var loggerHandle logger.Logger
+var (
+	// BuildTimestamp is the build date
+	BuildTimestamp string
+
+	// GitHash is the git build hash
+	GitHash string
+
+	// Version is the version of the software
+	Version string
+
+	// loggerHandle is the current logger facility
+	loggerHandle logger.Logger
+)
 
 func main() {
 	// Setup some sensible defaults for the vrddt configuration - this is
@@ -191,6 +204,12 @@ func main() {
 		),
 	}
 
+	timeStamp, err := strconv.ParseInt(BuildTimestamp, 10, 64)
+	if err != nil {
+		now := time.Now()
+		timeStamp = now.Unix()
+	}
+
 	app := &cli.App{
 		Action: rootAction(cfg),
 		After:  afterResources(cfg),
@@ -210,11 +229,13 @@ func main() {
 				return &altsrc.MapInputSource{}, nil
 			},
 		),
-		Prepare: prepareResources(cfg),
-		Flags:   flags,
-		Name:    "vrddt-api",
-		Usage:   "vrddt API service",
-		Version: "v0.0.1",
+		Commands: allCommands(cfg),
+		Compiled: time.Now(),
+		Flags:    flags,
+		Name:     "vrddt-api",
+		Prepare:  prepareResources(cfg),
+		Usage:    "vrddt API service",
+		Version:  fmt.Sprintf("%s [Build Date: %s, Git Hash: %s]", Version, time.Unix(timeStamp, 0), GitHash),
 	}
 
 	cli.HelpFlag = &cli.BoolFlag{
@@ -231,7 +252,34 @@ func main() {
 
 	if err := app.Run(os.Args); err != nil {
 		loggerHandle.Fatalf("An error occured running the application: %s", err)
-		os.Exit(1) // This may be repetitive with above
+		os.Exit(1)
+
+		return
+	}
+
+	return
+}
+
+// allCommands are all of the commands we are able to run
+func allCommands(cfg *config.Config) []*cli.Command {
+	return []*cli.Command{}
+}
+
+// afterResources will execute after Action() to cleanup
+func afterResources(cfg *config.Config) cli.AfterFunc {
+	return func(cliContext *cli.Context) (err error) {
+		return
+	}
+}
+
+// prepareResources will setup some common shared resources amoung all of the
+// commands and make them avaiable to use
+func prepareResources(cfg *config.Config) cli.PrepareFunc {
+	return func(cliContext *cli.Context) (err error) {
+		// Initalize logger
+		loggerHandle = logger.New(os.Stderr, cfg.Log.Level, cfg.Log.Format)
+
+		return
 	}
 }
 
@@ -293,25 +341,5 @@ func rootAction(cfg *config.Config) cli.ActionFunc {
 		}
 
 		return
-	}
-}
-
-// afterResources will execute after Action() to cleanup
-func afterResources(cfg *config.Config) cli.AfterFunc {
-	return func(cliContext *cli.Context) (err error) {
-		// TODO: Do stuff
-
-		return
-	}
-}
-
-// prepareResources will setup some common shared resources amoung all of the
-// commands and make them avaiable to use
-func prepareResources(cfg *config.Config) cli.PrepareFunc {
-	return func(cliContext *cli.Context) (err error) {
-		// Initalize logger
-		loggerHandle = logger.New(os.Stderr, cfg.Log.Level, cfg.Log.Format)
-
-		return nil
 	}
 }

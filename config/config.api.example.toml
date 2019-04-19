@@ -6,7 +6,7 @@
 
 [Log]
     Format  = "text"
-    Level   = "debug"
+    Level   = "info"
 
 [Queue]
     Type = "rabbitmq"

@@ -21,6 +21,13 @@ test.db
 .vscode/
 debug
 
-vrddt-225521.json
+# vrddt
+001_users.js
+config.admin.toml
+config.api.toml
+config.cli.toml
+config.web.toml
+config.worker.toml
 server.crt
 server.key
+vrddt-225521.json

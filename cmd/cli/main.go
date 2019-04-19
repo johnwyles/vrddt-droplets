@@ -4,22 +4,38 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"strconv"
 	"time"
 
 	cli "gopkg.in/urfave/cli.v2"
 	"gopkg.in/urfave/cli.v2/altsrc"
 
 	"github.com/johnwyles/vrddt-droplets/interfaces/config"
+	"github.com/johnwyles/vrddt-droplets/interfaces/converter"
 	"github.com/johnwyles/vrddt-droplets/pkg/logger"
 )
 
-var loggerHandle logger.Logger
-
-func allCommands(cfg *config.Config) []*cli.Command {
-	return []*cli.Command{
-		Download(cfg),
-	}
+// Services holds all of various services to the subcommands for use
+type Services struct {
+	Converter converter.Converter
 }
+
+var (
+	// BuildTimestamp is the build date
+	BuildTimestamp string
+
+	// GitHash is the git build hash
+	GitHash string
+
+	// Version is the version of the software
+	Version string
+
+	// loggerHandle is the current logger facility
+	loggerHandle logger.Logger
+
+	// services will be a refer to our global services avaiable to the subcommands
+	services = &Services{}
+)
 
 func main() {
 	// Setup some sensible defaults for the vrddt configuration - this is
@@ -30,9 +46,14 @@ func main() {
 			APIURI:  "http://localhost:8080",
 			Timeout: 20 * time.Second,
 		},
+		Converter: config.ConverterConfig{
+			FFmpeg: config.ConverterFFmpegConfig{
+				Path: "/usr/local/bin/ffmpeg",
+			},
+		},
 		Log: config.LogConfig{
 			Format: "text",
-			Level:  "debug",
+			Level:  "info",
 		},
 	}
 
@@ -77,6 +98,12 @@ func main() {
 		),
 	}
 
+	timeStamp, err := strconv.ParseInt(BuildTimestamp, 10, 64)
+	if err != nil {
+		now := time.Now()
+		timeStamp = now.Unix()
+	}
+
 	app := &cli.App{
 		Action: rootAction(cfg),
 		After:  afterResources(cfg),
@@ -96,12 +123,13 @@ func main() {
 				return &altsrc.MapInputSource{}, nil
 			},
 		),
-		Prepare:  prepareResources(cfg),
 		Commands: allCommands(cfg),
+		Compiled: time.Now(),
 		Flags:    flags,
 		Name:     "vrddt-cli",
-		Usage:    "vrddt CLI tool",
-		Version:  "v0.0.1",
+		Prepare:  prepareResources(cfg),
+		Usage:    "vrddt standalone CLI tool",
+		Version:  fmt.Sprintf("%s [Build Date: %s, Git Hash: %s]", Version, time.Unix(timeStamp, 0), GitHash),
 	}
 
 	cli.HelpFlag = &cli.BoolFlag{
@@ -116,17 +144,22 @@ func main() {
 		Usage:   "Print the current version",
 	}
 
-	if err := app.Run(os.Args); err != nil {
-		loggerHandle.Fatalf("An error occured running the application", err)
+	if err = app.Run(os.Args); err != nil {
+		loggerHandle.Fatalf("An error occured running the application: %s", err)
 		os.Exit(1)
+
+		return
 	}
+
+	return
 }
 
-// rootAction is the what we execute if no commands are specified
-func rootAction(cfg *config.Config) cli.ActionFunc {
-	return func(cliContext *cli.Context) (err error) {
-		cli.ShowAppHelp(cliContext)
-		return fmt.Errorf("No sub-command specified")
+// allCommands are all of the commands we are able to run
+func allCommands(cfg *config.Config) []*cli.Command {
+	return []*cli.Command{
+		DownloadWithAPI(cfg),
+		DownloadLocally(cfg),
+		// GetMetadata(cfg),
 	}
 }
 
@@ -150,6 +183,23 @@ func prepareResources(cfg *config.Config) cli.PrepareFunc {
 			loggerHandle.Fatalf("You did not supply a valid vrddt API URI: %s", cfg.CLI.APIURI)
 		}
 
+		// Setup converter
+		services.Converter, err = converter.FFmpeg(&cfg.Converter.FFmpeg, loggerHandle)
+		if err != nil {
+			return
+		}
+
 		return nil
+	}
+}
+
+// rootAction is the what we execute if no commands are specified
+func rootAction(cfg *config.Config) cli.ActionFunc {
+	return func(cliContext *cli.Context) (err error) {
+		cli.ShowAppHelp(cliContext)
+		loggerHandle.Fatalf("No sub-command specified")
+		os.Exit(1)
+
+		return
 	}
 }

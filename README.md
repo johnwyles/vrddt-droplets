@@ -6,6 +6,8 @@ Project skeleton and general architecture from: [spy16/droplets](https://github.
 
     - Research and implement context correctly
     - CMD
+        - CLI
+            - GetMetadata
         - WORKER
         - API
             - Authorization / OAuth

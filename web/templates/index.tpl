@@ -48,13 +48,13 @@
         data: $(this).serializeArray(),
         dataType: "json",
         type: "GET",
-        url: 'https://{{.VrddtAPIAddress}}/reddit_videos/',
+        url: 'https://{{.VrddtAPIURI}}/reddit_videos/',
         success: function(reddit_response)
         {
           var vrddt_response = "";
           $.ajax({
             type: "GET", 
-            url: 'https://{{.VrddtAPIAddress}}/vrddt_videos/'+reddit_response.vrddt_video_id,
+            url: 'https://{{.VrddtAPIURI}}/vrddt_videos/'+reddit_response.vrddt_video_id,
             success: function(vrddt_response)
             {
               console.log(reddit_response);

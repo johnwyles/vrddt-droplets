@@ -1,9 +1,6 @@
-[API]
-    Address         = "localhost:9090"
-
 [Log]
     Format = "text"
-    Level  = "debug"
+    Level  = "info"
 
 [Web]
     Address         = ":8080"
@@ -12,3 +9,4 @@
     KeyFile         = "config/ssl/server.key"
     StaticDir       = "web/static"
     TemplateDir     = "web/templates"
+    VrddtAPIURI     = "https://localhost:9090"

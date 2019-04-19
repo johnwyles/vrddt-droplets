@@ -8,4 +8,5 @@ type WebConfig struct {
 	KeyFile         string
 	StaticDir       string
 	TemplateDir     string
+	VrddtAPIURI     string
 }
