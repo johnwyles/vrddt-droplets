@@ -3,6 +3,7 @@ package redditvideos
 import (
 	"context"
 	"fmt"
+	"github.com/johnwyles/vrddt-droplets/pkg/errors"
 
 	"gopkg.in/mgo.v2/bson"
 
@@ -53,5 +54,5 @@ func (d *Destructor) Pop(ctx context.Context) (redditVideo *domain.RedditVideo, 
 		return redditVideo, nil
 	}
 
-	return nil, fmt.Errorf("Unable to assert type of data popped from queue as a Reddit video")
+	return nil, errors.ResourceUnknown("result", fmt.Sprintf("#%v", result))
 }

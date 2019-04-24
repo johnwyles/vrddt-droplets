@@ -1,5 +1,5 @@
 [CLI]
-    APIURI = "https://vrddt-api:9090"
+    APIURI = "https://localhost:9090"
 
 [Converter]
     Type = "ffmpeg"

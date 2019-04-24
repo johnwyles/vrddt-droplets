@@ -6,6 +6,7 @@ x-envrionment: &environment
   GCP_PROJECT_ID: vrddt-225521
   GOOGLE_APPLICATION_CREDENTIALS: /app/config/gcs/vrddt-225521.json
   MONGO_URL: mongodb://admin:password@mongo:27017/vrddt
+  VRDDT_VERSION: 0.0.5
 
 services:
   consul:
@@ -61,7 +62,18 @@ services:
       - "15672:15672"
     volumes:
       - rabbitmq:/var/lib/rabbitmq
-      # - "./rabbitmq.config:/etc/rabbitmq/rabbitmq.config:ro"
+      # - rabbitmq_config:/etc/rabbitmq/rabbitmq.config:ro
+
+  vrddt-admin:
+    entrypoint: dockerize -timeout 30s -wait tcp://consul:8500 -wait tcp://mongo:27017 -wait tcp://rabbitmq:5672 /app/vrddt-admin --config /app/config/config.admin.toml
+    environment: *environment
+    hostname: vrddt-admin
+    image: johnwyles/vrddt-admin:${VRDDT_VERSION}
+    links:
+      - mongo
+      - rabbitmq
+    networks:
+      - vrddt_droplets_net
 
   vrddt-api:
     entrypoint: dockerize -timeout 30s -wait tcp://consul:8500 -wait tcp://mongo:27017 -wait tcp://rabbitmq:5672 /app/vrddt-api --config /app/config/config.api.toml
@@ -75,6 +87,16 @@ services:
       - vrddt_droplets_net
     ports:
       - "9090:9090"
+
+  vrddt-cli:
+    entrypoint: dockerize -timeout 30s -wait tcp://consul:8500 -wait tcp://vrddt-api:9090 /app/vrddt-cli --config /app/config/config.cli.toml
+    environment: *environment
+    hostname: vrddt-cli
+    image: johnwyles/vrddt-cli:${VRDDT_VERSION}
+    links:
+      - vrddt-api
+    networks:
+      - vrddt_droplets_net
 
   vrddt-web:
     entrypoint: dockerize -timeout 30s -wait tcp://consul:8500 -wait tcp://vrddt-api:9090 /app/vrddt-web --config /app/config/config.web.toml

@@ -65,13 +65,13 @@ func (p *processor) DoWork(ctx context.Context) (err error) {
 		return p.doWorkRedditVideo(ctx)
 	case *domain.VrddtVideo:
 		p.log.Debugf("Performing work on vrddt video: %#v", p.work)
-		return fmt.Errorf("There is no work that can be performed on a vrddt video: %#v", p.work)
+		return errors.NotImplemented("vrddt video", fmt.Sprintf("There is no work that can be performed on a vrddt video: %#v", p.work))
 	case *domain.YoutubeVideo:
 		p.log.Debugf("Performing work on youtube video: %#v", p.work)
-		return fmt.Errorf("Working on youtube videos has not been implemented yet: %#v", p.work)
+		return errors.NotImplemented("youtube video", fmt.Sprintf("Working on youtube videos has not been implemented yet: %#v", p.work))
 	default:
 		p.log.Debugf("Performing work on unknown type: %#v", p.work)
-		return fmt.Errorf("There is no work that can be performed on an unknown type: %#v", p.work)
+		return errors.ResourceUnknown("unknown", fmt.Sprintf("%#v", p.work))
 	}
 }
 

@@ -182,7 +182,7 @@ func (r *rabbitmqConnection) MakeConsumer(ctx context.Context) (err error) {
 // Pop will pull off a Reddit video struct from the queue
 func (r *rabbitmqConnection) Pop(ctx context.Context) (msg interface{}, err error) {
 	if r.connectionType != Consumer {
-		return nil, fmt.Errorf("Connection type must be '%s' but it is '%s' instead", Consumer, r.connectionType)
+		return nil, errors.InvalidValue("connectionType", fmt.Sprintf("Connection type must be '%s' but it is '%s' instead", Consumer, r.connectionType))
 	}
 
 	data := <-r.delivery
@@ -196,11 +196,11 @@ func (r *rabbitmqConnection) Pop(ctx context.Context) (msg interface{}, err erro
 // Push will put a Reddit video struct onto the queue
 func (r *rabbitmqConnection) Push(ctx context.Context, msg interface{}) (err error) {
 	if r.connectionType != Client {
-		return fmt.Errorf("Connection type must be '%s' but it is '%s' instead", Client, r.connectionType)
+		return errors.InvalidValue("connectionType", fmt.Sprintf("Connection type must be '%s' but it is '%s' instead", Client, r.connectionType))
 	}
 
 	if _, ok := msg.([]byte); !ok {
-		return fmt.Errorf("RabbitMQ Push(msg), msg must be of type []byte")
+		return errors.InvalidValue("msg", fmt.Sprint("RabbitMQ Push(msg), msg must be of type []byte"))
 	}
 
 	byteMsg := msg.([]byte)
@@ -219,7 +219,7 @@ func (r *rabbitmqConnection) Push(ctx context.Context, msg interface{}) (err err
 		},
 	)
 	if err != nil {
-		return fmt.Errorf("Error publishing message: %#v", string(byteMsg))
+		return
 	}
 
 	r.log.Infof("Pushed message: %#v", string(byteMsg))
