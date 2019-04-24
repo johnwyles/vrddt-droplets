@@ -82,60 +82,6 @@ func main() {
 		),
 		altsrc.NewStringFlag(
 			&cli.StringFlag{
-				Destination: &cfg.Queue.RabbitMQ.BindingKeyName,
-				EnvVars:     []string{"VRDDT_RABBITMQ_BINDING_KEY_NAME"},
-				Name:        "Queue.RabbitMQ.BindingKeyName",
-				Usage:       "RabbitMQ binding key name",
-				Value:       cfg.Queue.RabbitMQ.BindingKeyName,
-			},
-		),
-		altsrc.NewStringFlag(
-			&cli.StringFlag{
-				Destination: &cfg.Queue.RabbitMQ.ExchangeName,
-				EnvVars:     []string{"VRDDT_RABBITMQ_EXCHANGE_NAME"},
-				Name:        "Queue.RabbitMQ.ExchangeName",
-				Usage:       "RabbitMQ exchange name",
-				Value:       cfg.Queue.RabbitMQ.ExchangeName,
-			},
-		),
-		altsrc.NewStringFlag(
-			&cli.StringFlag{
-				Destination: &cfg.Queue.RabbitMQ.URI,
-				EnvVars:     []string{"VRDDT_RABBITMQ_URI"},
-				Name:        "Queue.RabbitMQ.URI",
-				Usage:       "RabbitMQ connection string",
-				Value:       cfg.Queue.RabbitMQ.URI,
-			},
-		),
-		altsrc.NewStringFlag(
-			&cli.StringFlag{
-				Destination: &cfg.Store.Mongo.RedditVideosCollectionName,
-				EnvVars:     []string{"VRDDT_STORE_MONGO_REDDIT_VIDEOS_COLLECTION_NAME"},
-				Name:        "Store.Mongo.RedditVideosCollectionName",
-				Usage:       "Collection name where we will store information about the Reddit videos",
-				Value:       cfg.Store.Mongo.RedditVideosCollectionName,
-			},
-		),
-		altsrc.NewStringFlag(
-			&cli.StringFlag{
-				Destination: &cfg.Store.Mongo.URI,
-				EnvVars:     []string{"VRDDT_STORE_MONGO_URI"},
-				Name:        "Store.Mongo.URI",
-				Usage:       "MongoDB connection string",
-				Value:       cfg.Store.Mongo.URI,
-			},
-		),
-		altsrc.NewStringFlag(
-			&cli.StringFlag{
-				Destination: &cfg.Store.Mongo.VrddtVideosCollectionName,
-				EnvVars:     []string{"VRDDT_STORE_MONGO_VRDDT_VIDEOS_COLLECTION_NAME"},
-				Name:        "Store.Mongo.ReddtiVideosCollectionName",
-				Usage:       "Collection name where we will store information about the vrddt videos",
-				Value:       cfg.Store.Mongo.VrddtVideosCollectionName,
-			},
-		),
-		altsrc.NewStringFlag(
-			&cli.StringFlag{
 				Aliases:     []string{"a"},
 				Destination: &cfg.Web.Address,
 				EnvVars:     []string{"VRDDT_WEB_ADDRESS"},

@@ -2,7 +2,7 @@ package queue
 
 import (
 	"context"
-	"fmt"
+	"github.com/johnwyles/vrddt-droplets/pkg/errors"
 
 	"github.com/johnwyles/vrddt-droplets/interfaces/config"
 	"github.com/johnwyles/vrddt-droplets/pkg/logger"
@@ -49,26 +49,26 @@ func (m *memory) MakeConsumer(ctx context.Context) (err error) {
 
 func (m *memory) Push(ctx context.Context, msg interface{}) (err error) {
 	if m.connectionType != Client {
-		return fmt.Errorf("connection type must be '%s' but is is '%s' instead", Client, m.connectionType)
+		return errors.Conflict("Connection type", m.connectionType.String())
 	}
 
 	select {
 	case m.queue <- msg:
 		return
 	default:
-		return fmt.Errorf("memory queue is full of %d maximum items trying to publish: %#v", m.maxSize, msg)
+		return errors.ResourceLimit("memory", m.maxSize)
 	}
 }
 
 func (m *memory) Pop(ctx context.Context) (msg interface{}, err error) {
 	if m.connectionType != Consumer {
-		return nil, fmt.Errorf("connection type must be '%s' but it is '%s' instead", Consumer, m.connectionType)
+		return nil, errors.ConnectionFailure("memory", m.connectionType.String())
 	}
 
 	select {
 	case item := <-m.queue:
 		return item, nil
 	default:
-		return nil, fmt.Errorf("memory queue is empty of items")
+		return nil, errors.ResourceLimit("memory", 0)
 	}
 }

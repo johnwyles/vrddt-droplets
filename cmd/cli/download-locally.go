@@ -64,7 +64,11 @@ func beforeDownloadLocally(cliContext *cli.Context) (err error) {
 
 	// TODO: Context
 	ctx := context.TODO()
-	services.Converter.Init(ctx)
+
+	// Initialize converter
+	if err = services.Converter.Init(ctx); err != nil {
+		return
+	}
 
 	return
 }

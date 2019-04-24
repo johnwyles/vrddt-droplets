@@ -2,7 +2,6 @@ package storage
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -12,6 +11,7 @@ import (
 	"google.golang.org/api/option"
 
 	"github.com/johnwyles/vrddt-droplets/interfaces/config"
+	"github.com/johnwyles/vrddt-droplets/pkg/errors"
 	"github.com/johnwyles/vrddt-droplets/pkg/logger"
 )
 
@@ -54,7 +54,7 @@ func (g *gcs) Attributes(ctx context.Context, remotePath string) (attributes int
 // Cleanup closes the GCS connection
 func (g *gcs) Cleanup(ctx context.Context) (err error) {
 	if g.client == nil {
-		return fmt.Errorf("A client has not been set in order to be cleaned up")
+		return errors.ConnectionFailure("gcs", "A client has not been set in order to be cleaned up")
 	}
 
 	return g.client.Close()

@@ -6,13 +6,15 @@ Project skeleton and general architecture from: [spy16/droplets](https://github.
 
     - Research and implement context correctly
     - CMD
-        - CLI
-            - GetMetadata
-        - WORKER
+        - ADMIN
         - API
             - Authorization / OAuth
+        - CLI
+            - GetMetadata
         - WEB
             - Rate limiting
+        - WATCHER
+        - WORKER
     - INTERNALS
         - Refactor to return errors.XXX instead of fmt.Errorf
         - API Address needs to be sorted out where the Address can be anything local or remote

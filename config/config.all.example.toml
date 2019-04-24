@@ -3,7 +3,7 @@
     GracefulTimeout = 60
 
 [CLI]
-    APIURI = "http://localhost:9090"
+    APIURI = "https://vrddt-api:9090"
 
 [Converter]
     Type = "ffmpeg"
@@ -20,14 +20,14 @@
         BindingKeyName = "vrddt-bindingkey-converter"
         ExchangeName   = "vrddt-exchange-converter"
     	QueueName      = "vrddt-queue-converter"
-    	URI            = "amqp://admin:password@localhost:5672"
+    	URI            = "amqp://admin:password@rabbitmq:5672"
     [Queue.Memory]
         MaxSize = 100000
 
 [Storage]
     Type = "gcs"
     [Storage.GCS]
-    	CredentialsJSON = "/app/config/vrddt-225521.json"
+    	CredentialsJSON = "config/vrddt-225521.json"
     	GCSBucket       = "vrddt-media"
     [Storage.Local]
         Path = "/tmp"
@@ -36,7 +36,8 @@
     Type = "mongo"
     [Store.Mongo]
         RedditVideosCollectionName = "reddit_videos"
-    	URI                        = "mongodb://admin:password@localhost:27017/vrddt"
+        Timeout                    = 60
+    	URI                        = "mongodb://admin:password@mongo:27017/vrddt"
         VrddtVideosCollectionName  = "vrddt_videos"
     [Store.Memory]
         MaxSize = 100000
@@ -48,7 +49,7 @@
     KeyFile         = "config/ssl/server.key"
     StaticDir       = "web/static"
     TemplateDir     = "web/templates"
-    VrddtAPIURI     = "https://localhost:9090"
+    VrddtAPIURI     = "https://vrddt-api:9090"
 
 [Worker]
     [Worker.Processor]

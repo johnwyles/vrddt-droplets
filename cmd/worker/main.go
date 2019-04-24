@@ -78,6 +78,7 @@ func main() {
 		Store: config.StoreConfig{
 			Mongo: config.StoreMongoConfig{
 				RedditVideosCollectionName: "reddit_videos",
+				Timeout:                    60,
 				URI:                        "mongodb://admin:password@localhost:27017/vrddt",
 				VrddtVideosCollectionName:  "vrddt_videos",
 			},
@@ -173,6 +174,15 @@ func main() {
 				Name:        "Storage.GCS.Bucket",
 				Usage:       "GCS bucket for vrddt media",
 				Value:       cfg.Storage.GCS.Bucket,
+			},
+		),
+		altsrc.NewIntFlag(
+			&cli.IntFlag{
+				Destination: &cfg.Store.Mongo.Timeout,
+				EnvVars:     []string{"VRDDT_STORE_MONGO_TIMEOUT"},
+				Name:        "Store.Mongo.Timeout",
+				Usage:       "Connection timeout",
+				Value:       cfg.Store.Mongo.Timeout,
 			},
 		),
 		altsrc.NewStringFlag(
@@ -343,7 +353,6 @@ func allCommands(cfg *config.Config) []*cli.Command {
 
 func rootAction(cfg *config.Config) cli.ActionFunc {
 	return func(cliContext *cli.Context) (err error) {
-		cli.ShowAppHelp(cliContext)
-		return fmt.Errorf("No sub-command specified")
+		return
 	}
 }

@@ -12,6 +12,12 @@ generated-code:
 
 SOURCES=$(shell find . -name "*.go" | grep -v test)
 
+all: all-cli all-docker
+
+all-cli: vrddt-admin vrddt-api vrddt-cli vrddt-web vrddt-worker
+
+all-docker: vrddt-admin-docker vrddt-api-docker vrddt-cli-docker vrddt-web-docker vrddt-worker-docker
+
 #
 # ADMIN
 #
@@ -27,7 +33,7 @@ vrddt-admin-docker: ./Dockerfile.admin
 		--build-arg VERSION_FLAG="$(VERSION_FLAG)" \
 		--build-arg VRDDT_COMMAND_PATH="./cmd/admin" \
 		--build-arg VRDDT_COMMAND="admin" \
-		-f cmd/Dockerfile.admin .
+		-f ./Dockerfile.admin .
 	rm Dockerfile.admin
 
 vrddt-admin-docker-run:
@@ -39,17 +45,17 @@ vrddt-admin-docker-run:
 vrddt-api: $(SOURCES)
 	go build -mod=vendor -a -installsuffix cgo -ldflags "-extldflags \"-static\"" -ldflags -v -ldflags "$(VERSION_FLAG)" -o $@ ./cmd/api
 
-Dockerfile.api: cmd/Dockerfile
-	cp $< $@
+# Dockerfile.api: cmd/Dockerfile.generic
+# 	cp $< $@
 
-vrddt-api-docker: ./Dockerfile.api
+vrddt-api-docker: #./Dockerfile.api
 	docker build \
 		-t johnwyles/vrddt-api:$(VERSION) \
 		--build-arg VERSION_FLAG="$(VERSION_FLAG)" \
 		--build-arg VRDDT_COMMAND_PATH="./cmd/api" \
 		--build-arg VRDDT_COMMAND="api" \
-		-f Dockerfile.api .
-	rm Dockerfile.api
+		-f cmd/Dockerfile.api .
+	#rm Dockerfile.api
 
 vrddt-api-docker-run:
 	docker run -mod=vendor johnwyles/vrddt-api:$(VERSION)
@@ -69,7 +75,7 @@ vrddt-cli-docker: ./Dockerfile.cli
 		--build-arg VERSION_FLAG="$(VERSION_FLAG)" \
 		--build-arg VRDDT_COMMAND_PATH="./cmd/cli" \
 		--build-arg VRDDT_COMMAND="cli" \
-		-f Dockerfile.cli .
+		-f ./Dockerfile.cli .
 	rm Dockerfile.cli
 
 vrddt-cli-docker-run:
@@ -88,8 +94,8 @@ vrddt-web-docker: #./Dockerfile.vrddt-web
 	docker build \
 		-t johnwyles/vrddt-web:$(VERSION) \
 		--build-arg VERSION_FLAG="$(VERSION_FLAG)" \
-		--build-arg COMMAND_PATH="./cmd/web" \
-		--build-arg COMMAND="web" \
+		--build-arg VRDDT_COMMAND_PATH="./cmd/web" \
+		--build-arg VRDDT_COMMAND="web" \
 		-f cmd/Dockerfile.web .
 	# rm Dockerfile.vrddt-web
 
@@ -109,8 +115,8 @@ vrddt-worker-docker: #./Dockerfile.worker
 	docker build \
 		-t johnwyles/vrddt-worker:$(VERSION) \
 		--build-arg VERSION_FLAG="$(VERSION_FLAG)" \
-		--build-arg COMMAND_PATH="./cmd/worker" \
-		--build-arg COMMAND="worker" \
+		--build-arg VRDDT_COMMAND_PATH="./cmd/worker" \
+		--build-arg VRDDT_COMMAND="worker" \
 		-f cmd/Dockerfile.worker .
 	# rm Dockerfile.vrddt-worker
 

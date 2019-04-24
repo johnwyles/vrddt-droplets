@@ -64,8 +64,16 @@ func beforeProcessWithInternalServices(cliContext *cli.Context) (err error) {
 
 	// TODO: Context
 	ctx := context.TODO()
-	services.Store.Init(ctx)
-	services.Queue.Init(ctx)
+
+	// Initialize the queue
+	if err = services.Queue.Init(ctx); err != nil {
+		return
+	}
+
+	// Initialize the store
+	if err = services.Store.Init(ctx); err != nil {
+		return
+	}
 
 	return
 }
@@ -151,7 +159,7 @@ func processWithInternalServices(cliContext *cli.Context) (err error) {
 	for {
 		select {
 		case <-timeout:
-			return errors.OperationTimeout("vrddt Video Processor", timeoutTime)
+			return errors.ConnectionTimeout("vrddt Video Processor", timeoutTime)
 		case <-tick:
 			// If the Reddit URL is not found in the database yet keep checking
 			temporaryRedditVideo, err := redditVideoRetriever.GetByURL(context.TODO(), redditVideo.URL)

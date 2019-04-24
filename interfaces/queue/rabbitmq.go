@@ -3,6 +3,7 @@ package queue
 import (
 	"context"
 	"fmt"
+	"github.com/johnwyles/vrddt-droplets/pkg/errors"
 	"time"
 
 	"github.com/google/uuid"
@@ -53,7 +54,7 @@ func RabbitMQ(cfg *config.QueueRabbitMQConfig, loggerHandle logger.Logger) (queu
 // Cleanup will close the channel and connection
 func (r *rabbitmqConnection) Cleanup(ctx context.Context) (err error) {
 	if r.connection == nil || r.channel == nil {
-		return fmt.Errorf("channel and connection have not be initialized")
+		return errors.ConnectionFailure("rabbitmq", "Channel and connection have not be initialized")
 	}
 
 	if err = r.channel.Close(); err != nil {
@@ -63,7 +64,7 @@ func (r *rabbitmqConnection) Cleanup(ctx context.Context) (err error) {
 	r.log.Infof("Channel closed")
 
 	if err = r.connection.Close(); err != nil {
-		return fmt.Errorf("Error closing connection")
+		return errors.ConnectionFailure("rabbitmq", "Unable to close connection")
 	}
 	r.log.Infof("Connection closed")
 
@@ -151,12 +152,12 @@ func (r *rabbitmqConnection) MakeConsumer(ctx context.Context) (err error) {
 	// Setup a new AMQP consumer UUID
 	uuid, err := uuid.NewRandom()
 	if err != nil {
-		return fmt.Errorf("Error generating new random UUID: %s", err)
+		return
 	}
 	r.consumerID = uuid.String()
 
 	if err = r.channel.Qos(1, 0, false); err != nil {
-		return fmt.Errorf("Error setting QoS level: %s", err)
+		return
 	}
 
 	r.delivery, err = r.channel.Consume(

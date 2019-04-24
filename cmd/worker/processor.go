@@ -59,11 +59,30 @@ func beforeProcessor(cfg *config.Config) cli.BeforeFunc {
 		// TODO: Context
 		ctx := context.TODO()
 
-		services.Converter.Init(ctx)
-		services.Queue.Init(ctx)
-		services.Storage.Init(ctx)
-		services.Store.Init(ctx)
-		services.Worker.Init(ctx)
+		// Initialize the converter
+		if err = services.Converter.Init(ctx); err != nil {
+			return
+		}
+
+		// Initialize the queue
+		if err = services.Queue.Init(ctx); err != nil {
+			return
+		}
+
+		// Initialize the storage
+		if err = services.Storage.Init(ctx); err != nil {
+			return
+		}
+
+		// Initialize the store
+		if err = services.Store.Init(ctx); err != nil {
+			return
+		}
+
+		// Initialize the worker
+		if err = services.Worker.Init(ctx); err != nil {
+			return
+		}
 
 		return
 	}

@@ -12,6 +12,7 @@ import (
 	"github.com/johnwyles/vrddt-droplets/interfaces/config"
 	"github.com/johnwyles/vrddt-droplets/interfaces/queue"
 	"github.com/johnwyles/vrddt-droplets/interfaces/store"
+	"github.com/johnwyles/vrddt-droplets/pkg/errors"
 	"github.com/johnwyles/vrddt-droplets/pkg/logger"
 )
 
@@ -65,6 +66,7 @@ func main() {
 			},
 			Mongo: config.StoreMongoConfig{
 				RedditVideosCollectionName: "reddit_videos",
+				Timeout:                    60,
 				URI:                        "mongodb://admin:password@localhost:27017/vrddt",
 				VrddtVideosCollectionName:  "vrddt_videos",
 			},
@@ -136,6 +138,15 @@ func main() {
 				Name:        "Store.Mongo.RedditVideosCollectionName",
 				Usage:       "Collection name where we will store information about the Reddit videos",
 				Value:       cfg.Store.Mongo.RedditVideosCollectionName,
+			},
+		),
+		altsrc.NewIntFlag(
+			&cli.IntFlag{
+				Destination: &cfg.Store.Mongo.Timeout,
+				EnvVars:     []string{"VRDDT_STORE_MONGO_TIMEOUT"},
+				Name:        "Store.Mongo.Timeout",
+				Usage:       "Connection timeout",
+				Value:       cfg.Store.Mongo.Timeout,
 			},
 		),
 		altsrc.NewStringFlag(
@@ -256,6 +267,6 @@ func prepareResources(cfg *config.Config) cli.PrepareFunc {
 func rootAction(cfg *config.Config) cli.ActionFunc {
 	return func(cliContext *cli.Context) (err error) {
 		cli.ShowAppHelp(cliContext)
-		return fmt.Errorf("No sub-command specified")
+		return errors.MissingField("subcommand")
 	}
 }

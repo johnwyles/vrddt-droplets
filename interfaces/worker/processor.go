@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/johnwyles/vrddt-droplets/pkg/errors"
 	"io/ioutil"
 	"os"
 
@@ -54,7 +55,7 @@ func (p *processor) CompleteWork(ctx context.Context) (err error) {
 // DoWork will perform the work
 func (p *processor) DoWork(ctx context.Context) (err error) {
 	if p.work == nil {
-		return fmt.Errorf("The was no element of work to perform converter work on")
+		return errors.MissingField("work")
 	}
 
 	// TODO: Implement other video types
@@ -164,5 +165,5 @@ func (p *processor) unmarshalJSON(byteWork []byte) (err error) {
 		return err
 	}
 
-	return fmt.Errorf("Unrecognized work item: %#v", p.work)
+	return errors.InvalidValue("work", fmt.Sprintf("Unrecognized work item: %#v", p.work))
 }

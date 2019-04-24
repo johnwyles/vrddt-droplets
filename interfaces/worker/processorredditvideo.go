@@ -91,14 +91,14 @@ func (p *processor) checkIfVrddtMD5Exists(ctx context.Context, outputMD5Sum []by
 // to storage
 func (p *processor) doWorkRedditVideo(ctx context.Context) (err error) {
 	if _, ok := p.work.(*domain.RedditVideo); !ok {
-		return fmt.Errorf("work item is not a reddit video: %#v", p.work)
+		return errors.InvalidValue("work", fmt.Sprintf("Work item is not a valid Reddit video: %#v", p.work))
 	}
 
 	redditVideo := domain.NewRedditVideo()
 	if p.work.(*domain.RedditVideo).URL != "" {
 		redditVideo.URL = p.work.(*domain.RedditVideo).URL
 	} else {
-		return fmt.Errorf("Work item was a Reddit video but did not have the URL field set")
+		return errors.MissingField("url")
 	}
 
 	// We shouldn't need this if all the entries to the queue are done

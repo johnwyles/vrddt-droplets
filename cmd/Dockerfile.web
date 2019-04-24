@@ -3,19 +3,20 @@
 #
 FROM golang:1.11-alpine as builder
 
-ARG VRDDT_COMMAND_PATH=""
 ARG VRDDT_COMMAND=""
+ARG VRDDT_COMMAND_PATH=""
 ARG VERSION_FLAG=""
 
-ENV VRDDT_COMMAND_PATH=$VRDDT_COMMAND_PATH
-ENV VRDDT_COMMAND=$VRDDT_COMMAND
+ENV GO111MODULE=on
 ENV VERSION_FLAG=$VERSION_FLAG
+ENV VRDDT_COMMAND=$VRDDT_COMMAND
+ENV VRDDT_COMMAND_PATH=$VRDDT_COMMAND_PATH
 
 WORKDIR $GOPATH/src/github.com/johnwyles/vrddt-droplets
 
 COPY . ./
 
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags "-extldflags \"-static\"" -ldflags -v -ldflags "$VERSION_FLAG" -o /vrddt-$VRDDT_COMMAND $VRDDT_COMMAND_PATH
+RUN CGO_ENABLED=0 GOOS=linux go build -mod=vendor -a -installsuffix cgo -ldflags "-extldflags \"-static\"" -ldflags -v -ldflags "$VERSION_FLAG" -o /vrddt-$VRDDT_COMMAND $VRDDT_COMMAND_PATH
 
 
 #
@@ -23,12 +24,12 @@ RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags "-extldflag
 #
 FROM jrottenberg/ffmpeg:4.1-alpine
 
-ARG VRDDT_COMMAND=""
 ARG VERSION_FLAG=""
+ARG VRDDT_COMMAND=""
 
-ENV VRDDT_COMMAND=$VRDDT_COMMAND
 ENV DOCKERIZE_VERSION v0.6.1
 ENV VERSION_FLAG=$VERSION_FLAG
+ENV VRDDT_COMMAND=$VRDDT_COMMAND
 
 RUN apk add --no-cache openssl
 RUN wget https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSION/dockerize-alpine-linux-amd64-$DOCKERIZE_VERSION.tar.gz \
@@ -38,10 +39,10 @@ RUN wget https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSI
 RUN mkdir -p /app/config
 
 COPY ./config/config.$VRDDT_COMMAND.toml /app/config/config.$VRDDT_COMMAND.toml
-COPY ./config/ssl/server.crt /app/config
-COPY ./config/ssl/server.key /app/config
+COPY ./config/ssl /app/config/ssl
+COPY ./web /app/web
 
-COPY --from=builder /vrddt-$VRDDT_COMMAND /vrddt-$VRDDT_COMMAND
+COPY --from=builder /vrddt-$VRDDT_COMMAND /app/vrddt-$VRDDT_COMMAND
 RUN chmod +x /app/vrddt-$VRDDT_COMMAND
 
-ENTRYPOINT /app/vrddt-$VRDDT_COMMAND --config config.web.toml
+ENTRYPOINT /app/vrddt-$VRDDT_COMMAND --config /app/config/config.$VRDDT_COMMAND.toml

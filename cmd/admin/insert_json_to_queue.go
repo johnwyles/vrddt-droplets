@@ -44,8 +44,16 @@ func beforeInsertJSONToQueue(cliContext *cli.Context) (err error) {
 
 	// TODO: Context
 	ctx := context.TODO()
-	services.Queue.Init(ctx)
-	services.Store.Init(ctx)
+
+	// Initialize the queue
+	if err = services.Queue.Init(ctx); err != nil {
+		return
+	}
+
+	// Initalize the store
+	if err = services.Store.Init(ctx); err != nil {
+		return
+	}
 
 	return
 }

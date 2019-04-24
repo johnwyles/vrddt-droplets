@@ -3,22 +3,17 @@ package store
 import (
 	"context"
 	"fmt"
-	"github.com/johnwyles/vrddt-droplets/pkg/errors"
+	"time"
 
 	mgo "gopkg.in/mgo.v2"
 
 	"github.com/johnwyles/vrddt-droplets/domain"
 	"github.com/johnwyles/vrddt-droplets/interfaces/config"
+	"github.com/johnwyles/vrddt-droplets/pkg/errors"
 	"github.com/johnwyles/vrddt-droplets/pkg/logger"
 )
 
 // TODO: Add logging
-// TODO: Turn QueryLimit into a configuration variable
-
-var (
-	// QueryLimit will limit the number of results returned in requests to this
-	QueryLimit = 100
-)
 
 // mongoSession contains all the information about a Mongo session
 type mongoSession struct {
@@ -26,6 +21,7 @@ type mongoSession struct {
 	log                        logger.Logger
 	redditVideosCollectionName string
 	session                    *mgo.Session
+	timeout                    int
 	vrddtVideosCollectionName  string
 	uri                        string
 }
@@ -37,6 +33,7 @@ func Mongo(cfg *config.StoreMongoConfig, loggerHandle logger.Logger) (store Stor
 	store = &mongoSession{
 		log:                        loggerHandle,
 		redditVideosCollectionName: cfg.RedditVideosCollectionName,
+		timeout:                    cfg.Timeout,
 		uri:                        cfg.URI,
 		vrddtVideosCollectionName:  cfg.VrddtVideosCollectionName,
 	}
@@ -49,7 +46,7 @@ func (m *mongoSession) Cleanup(ctx context.Context) (err error) {
 	m.log.Debugf("Cleanup()")
 
 	if m.session == nil {
-		return fmt.Errorf("A connection is set in order to be cleaned up")
+		return errors.ConnectionFailure("mongo", "A connection is not set in order to be cleaned up")
 	}
 
 	m.session.Close()
@@ -184,9 +181,12 @@ func (m *mongoSession) Init(ctx context.Context) (err error) {
 		return
 	}
 
+	dialInfo.Timeout = time.Duration(m.timeout) * time.Second
+
 	m.database = dialInfo.Database
 
 	m.session, err = mgo.DialWithInfo(dialInfo)
+	// m.session, err = mgo.DialWithTimeout(m.uri, 5*time.Second)
 	if err != nil {
 		return
 	}

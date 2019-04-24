@@ -71,6 +71,7 @@ func main() {
 			},
 			Mongo: config.StoreMongoConfig{
 				RedditVideosCollectionName: "reddit_videos",
+				Timeout:                    60,
 				URI:                        "mongodb://admin:password@localhost:27017/vrddt",
 				VrddtVideosCollectionName:  "vrddt_videos",
 			},
@@ -184,6 +185,15 @@ func main() {
 				Value:       cfg.Store.Mongo.RedditVideosCollectionName,
 			},
 		),
+		altsrc.NewIntFlag(
+			&cli.IntFlag{
+				Destination: &cfg.Store.Mongo.Timeout,
+				EnvVars:     []string{"VRDDT_STORE_MONGO_TIMEOUT"},
+				Name:        "Store.Mongo.Timeout",
+				Usage:       "Connection timeout",
+				Value:       cfg.Store.Mongo.Timeout,
+			},
+		),
 		altsrc.NewStringFlag(
 			&cli.StringFlag{
 				Destination: &cfg.Store.Mongo.URI,
@@ -289,18 +299,27 @@ func rootAction(cfg *config.Config) cli.ActionFunc {
 		// Initalize connections
 		loggerHandle = logger.New(os.Stderr, cfg.Log.Level, cfg.Log.Format)
 
+		// Setup the queue
 		q, err := queue.RabbitMQ(&cfg.Queue.RabbitMQ, loggerHandle)
 		if err != nil {
 			return
 		}
-		q.Init(context.TODO())
+
+		// Initialize the queue
+		if err = q.Init(context.TODO()); err != nil {
+			return
+		}
 
 		// Setup the store
 		str, err := store.Mongo(&cfg.Store.Mongo, loggerHandle)
 		if err != nil {
 			return
 		}
-		str.Init(context.TODO())
+
+		// Initialize the store
+		if err = str.Init(context.TODO()); err != nil {
+			return
+		}
 
 		// Get the REST controller
 		router := mux.NewRouter()

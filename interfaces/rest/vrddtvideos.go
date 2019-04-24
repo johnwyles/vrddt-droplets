@@ -192,7 +192,7 @@ func (vvc *vrddtVideosController) getByRedditURL(wr http.ResponseWriter, req *ht
 		for {
 			select {
 			case <-timeout:
-				respondErr(wr, errors.OperationTimeout("Fetching Reddit URL from database", timeoutTime))
+				respondErr(wr, errors.ConnectionTimeout("database", timeoutTime))
 				vvc.Errorf("Operation timed out at after '%d' seconds.", timeoutTime)
 				return
 			case <-tick:

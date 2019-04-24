@@ -6,7 +6,7 @@
 
 [Log]
     Format  = "text"
-    Level   = "info"
+    Level   = "debug"
 
 [Queue]
     Type = "rabbitmq"
@@ -14,7 +14,7 @@
         BindingKeyName = "vrddt-bindingkey-converter"
         ExchangeName   = "vrddt-exchange-converter"
     	QueueName      = "vrddt-queue-converter"
-    	URI            = "amqp://admin:password@localhost:5672"
+    	URI            = "amqp://admin:password@rabbitmq:5672"
     [Queue.Memory]
         MaxSize = 100000
 
@@ -22,7 +22,8 @@
     Type = "mongo"
     [Store.Mongo]
         RedditVideosCollectionName = "reddit_videos"
-    	URI                        = "mongodb://admin:password@localhost:27017/vrddt"
+        Timeout                    = 60
+    	URI                        = "mongodb://admin:password@mongo:27017/vrddt"
         VrddtVideosCollectionName  = "vrddt_videos"
     [Store.Memory]
         MaxSize = 100000
