@@ -1,25 +1,18 @@
-version: '3.4'
-
-x-envrionment: &environment
-  AMQP_URL: amqp://admin:password@rabbitmq:5672
-  GCS_BUCKET: vrddt-media
-  GCP_PROJECT_ID: vrddt-225521
-  GOOGLE_APPLICATION_CREDENTIALS: /app/config/gcs/vrddt-225521.json
-  MONGO_URL: mongodb://admin:password@mongo:27017/vrddt
-  VRDDT_VERSION: 0.0.5
+version: '3'
 
 services:
-  consul:
-    command: -server -bootstrap -rejoin
-    hostname: consul-server
-    image: progrium/consul:latest
-    networks:
-      - vrddt_droplets_net
-    ports:
-      - "8300:8300"
-      - "8400:8400"
-      - "8500:8500"
-      - "8600:53/udp"
+  # consul:
+  #   command: -server -bootstrap -rejoin
+  #   hostname: consul-server
+  #   image: progrium/consul:latest
+  #   networks:
+  #     - vrddt_droplets_net
+  #   ports:
+  #     - "8300:8300"
+  #     - "8400:8400"
+  #     - "8500:8500"
+  #     - "8600:53/udp"
+
   mongo:
     environment:
       MONGO_INITDB_DATABASE: vrddt
@@ -36,6 +29,7 @@ services:
       - ./config/mongo/001_users.js:/docker-entrypoint-initdb.d/001_users.js:ro
       - mongodb:/data/db
       - mongodb_config:/data/configdb
+
   mongo-express:
     environment:
       ME_CONFIG_MONGODB_ADMINPASSWORD: password
@@ -47,6 +41,7 @@ services:
     ports:
       - "8081:8081"
     restart: always
+
   rabbitmq:
     environment:
       RABBITMQ_DEFAULT_PASS: password
@@ -64,20 +59,18 @@ services:
       - rabbitmq:/var/lib/rabbitmq
       # - rabbitmq_config:/etc/rabbitmq/rabbitmq.config:ro
 
-  vrddt-admin:
-    entrypoint: dockerize -timeout 30s -wait tcp://consul:8500 -wait tcp://mongo:27017 -wait tcp://rabbitmq:5672 /app/vrddt-admin --config /app/config/config.admin.toml
-    environment: *environment
-    hostname: vrddt-admin
-    image: johnwyles/vrddt-admin:${VRDDT_VERSION}
-    links:
-      - mongo
-      - rabbitmq
-    networks:
-      - vrddt_droplets_net
+  # vrddt-admin:
+  #   entrypoint: dockerize -timeout 30s -wait tcp://mongo:27017 -wait tcp://rabbitmq:5672 /app/vrddt-admin --config /app/config/config.admin.toml
+  #   hostname: vrddt-admin
+  #   image: johnwyles/vrddt-admin:${VRDDT_VERSION}
+  #   links:
+  #     - mongo
+  #     - rabbitmq
+  #   networks:
+  #     - vrddt_droplets_net
 
   vrddt-api:
-    entrypoint: dockerize -timeout 30s -wait tcp://consul:8500 -wait tcp://mongo:27017 -wait tcp://rabbitmq:5672 /app/vrddt-api --config /app/config/config.api.toml
-    environment: *environment
+    entrypoint: dockerize -timeout 30s -wait tcp://mongo:27017 -wait tcp://rabbitmq:5672 /app/vrddt-api --config /app/config/config.api.toml
     hostname: vrddt-api
     image: johnwyles/vrddt-api:${VRDDT_VERSION}
     links:
@@ -88,19 +81,17 @@ services:
     ports:
       - "9090:9090"
 
-  vrddt-cli:
-    entrypoint: dockerize -timeout 30s -wait tcp://consul:8500 -wait tcp://vrddt-api:9090 /app/vrddt-cli --config /app/config/config.cli.toml
-    environment: *environment
-    hostname: vrddt-cli
-    image: johnwyles/vrddt-cli:${VRDDT_VERSION}
-    links:
-      - vrddt-api
-    networks:
-      - vrddt_droplets_net
+  # vrddt-cli:
+  #   entrypoint: dockerize -timeout 30s -wait tcp://vrddt-api:9090 /app/vrddt-cli --config /app/config/config.cli.toml
+  #   hostname: vrddt-cli
+  #   image: johnwyles/vrddt-cli:${VRDDT_VERSION}
+  #   links:
+  #     - vrddt-api
+  #   networks:
+  #     - vrddt_droplets_net
 
   vrddt-web:
-    entrypoint: dockerize -timeout 30s -wait tcp://consul:8500 -wait tcp://vrddt-api:9090 /app/vrddt-web --config /app/config/config.web.toml
-    environment: *environment
+    entrypoint: dockerize -timeout 30s -wait tcp://vrddt-api:9090 /app/vrddt-web --config /app/config/config.web.toml
     hostname: vrddt-api
     image: johnwyles/vrddt-web:${VRDDT_VERSION}
     links:
@@ -113,8 +104,7 @@ services:
       - "8080:8080"
 
   vrddt-worker:
-    entrypoint: dockerize -timeout 30s -wait tcp://consul:8500 -wait tcp://mongo:27017 -wait tcp://rabbitmq:5672 /app/vrddt-worker --config /app/config/config.worker.toml processor
-    environment: *environment
+    entrypoint: dockerize -timeout 30s -wait tcp://mongo:27017 -wait tcp://rabbitmq:5672 /app/vrddt-worker --config /app/config/config.worker.toml processor
     hostname: vrddt-worker
     image: johnwyles/vrddt-worker:${VRDDT_VERSION}
     links:

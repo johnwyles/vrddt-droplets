@@ -1,0 +1,33 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert
+    kompose.version: 1.18.0 ()
+  creationTimestamp: null
+  labels:
+    io.kompose.service: mongo-express
+  name: mongo-express
+spec:
+  replicas: 1
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        io.kompose.service: mongo-express
+    spec:
+      containers:
+      - env:
+        - name: ME_CONFIG_MONGODB_ADMINPASSWORD
+          value: password
+        - name: ME_CONFIG_MONGODB_ADMINUSERNAME
+          value: admin
+        image: mongo-express
+        name: mongo-express
+        ports:
+        - containerPort: 8081
+        resources: {}
+      hostname: mongo-express
+      restartPolicy: Always
+status: {}

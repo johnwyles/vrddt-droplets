@@ -27,8 +27,8 @@
 [Storage]
     Type = "gcs"
     [Storage.GCS]
-    	CredentialsJSON = "config/vrddt-225521.json"
-    	GCSBucket       = "vrddt-media"
+    	CredentialsJSON = "config/vrddt-239121.json"
+    	GCSBucket       = "vrddt"
     [Storage.Local]
         Path = "/tmp"
 

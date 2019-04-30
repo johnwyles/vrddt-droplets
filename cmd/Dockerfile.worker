@@ -38,7 +38,7 @@ RUN wget https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSI
 
 RUN mkdir -p /app/config
 
-COPY ./config/gcs/vrddt-225521.json /app/config/gcs/vrddt-225521.json
+COPY ./config/gcs/vrddt-239121.json /app/config/gcs/vrddt-239121.json
 COPY ./config/config.$VRDDT_COMMAND.toml /app/config/config.$VRDDT_COMMAND.toml
 
 COPY --from=builder /vrddt-$VRDDT_COMMAND /app/vrddt-$VRDDT_COMMAND

@@ -71,7 +71,7 @@ func main() {
 		Storage: config.StorageConfig{
 			GCS: config.StorageGCSConfig{
 				CredentialsJSON: "",
-				Bucket:          "vrddt-media",
+				Bucket:          "vrddt",
 			},
 			Type: config.StorageConfigGCS,
 		},

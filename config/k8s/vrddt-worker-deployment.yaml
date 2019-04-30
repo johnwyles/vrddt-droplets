@@ -1,0 +1,38 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert
+    kompose.version: 1.18.0 ()
+  creationTimestamp: null
+  labels:
+    io.kompose.service: vrddt-worker
+  name: vrddt-worker
+spec:
+  replicas: 1
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        io.kompose.service: vrddt-worker
+    spec:
+      containers:
+      - command:
+        - dockerize
+        - -timeout
+        - 30s
+        - -wait
+        - tcp://mongo:27017
+        - -wait
+        - tcp://rabbitmq:5672
+        - /app/vrddt-worker
+        - --config
+        - /app/config/config.worker.toml
+        - processor
+        image: johnwyles/vrddt-worker:0.0.5
+        name: vrddt-worker
+        resources: {}
+      hostname: vrddt-worker
+      restartPolicy: Always
+status: {}
